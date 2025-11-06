@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth.js tables
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String?
+  email        String?   @unique
+  emailVerified DateTime?
+  image        String?
+  cancerType   String?
+  zipCode      String?
+  preferences  Json      @default("{}")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  dailyCheckins    DailyCheckIn[]
+  aiChatSessions   AiChatSession[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Application tables
+model ClinicalTrial {
+  id                String   @id @default(cuid())
+  nctId             String   @unique
+  title             String   @db.Text
+  description       String?  @db.Text
+  conditions        String[]
+  eligibilityCriteria String? @db.Text
+  locations         Json?
+  status            String?
+  startDate         DateTime?
+  completionDate    DateTime?
+  interventionType  String?
+  keywords          String[]
+  metadata          Json?    @default("{}")
+  ingestedAt        DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ResearchPaper {
+  id              String   @id @default(cuid())
+  pubmedId        String   @unique
+  title           String   @db.Text
+  abstract        String?  @db.Text
+  authors         String[]
+  journal         String?
+  publicationDate DateTime?
+  cancerTypes     String[]
+  treatmentTypes  String[]
+  keywords        String[]
+  fullTextUrl     String?  @db.Text
+  summaryPlain    String?  @db.Text
+  summaryClinical String?  @db.Text
+  metadata        Json?    @default("{}")
+  ingestedAt      DateTime @default(now())
+}
+
+// PaperEmbedding model removed for Phase 1 - will add back with pgvector extension in Phase 2
+
+model NewsArticle {
+  id          String    @id @default(cuid())
+  title       String    @db.Text
+  content     String?   @db.Text
+  source      String?
+  url         String?   @unique @db.Text
+  publishedAt DateTime?
+  cancerTypes String[]
+  tags        String[]
+  summary     String?   @db.Text
+  ingestedAt  DateTime  @default(now())
+}
+
+model RssFeed {
+  id          String   @id @default(cuid())
+  url         String   @unique @db.Text
+  name        String?  // Optional friendly name
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AltMedicineResearch {
+  id          String    @id @default(cuid())
+  title        String    @db.Text
+  description  String?   @db.Text
+  source       String?
+  url          String?   @db.Text
+  cancerTypes  String[]
+  evidenceLevel String?
+  publishedAt  DateTime?
+  summary      String?   @db.Text
+  ingestedAt   DateTime  @default(now())
+}
+
+model TreatmentSideEffect {
+  id             String   @id @default(cuid())
+  treatmentName  String
+  sideEffectName String
+  severity       String?  // common, concerning, emergency
+  description    String?  @db.Text
+  managementAdvice String? @db.Text
+  citation       String?  @db.Text
+  updatedAt      DateTime @updatedAt
+
+  @@unique([treatmentName, sideEffectName])
+}
+
+model DailyCheckIn {
+  id           String   @id @default(cuid())
+  userId       String
+  checkInDate  DateTime @db.Date
+  symptoms     Json     // {nausea: 7, fatigue: 5, ...}
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, checkInDate])
+}
+
+model AiChatSession {
+  id               String   @id @default(cuid())
+  userId           String
+  message          String   @db.Text
+  response         String   @db.Text
+  cancerTypeContext String?
+  explanationLevel String?  // 'layperson' or 'clinical'
+  citations        Json?    @default("[]")
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SupportResource {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  category    String?   // nonprofit, travel_grant, caregiver_support, etc.
+  contactInfo Json?     @default("{}")
+  eligibility String?   @db.Text
+  url         String?   @db.Text
+  cancerTypes String[]
+  regions     String[]
+}
+
+model DataIngestionLog {
+  id          String   @id @default(cuid())
+  source      String   // 'pubmed', 'clinicaltrials', 'rss', etc.
+  recordId    String
+  recordType  String
+  action      String   // 'created', 'updated', 'skipped'
+  metadata    Json?    @default("{}")
+  ingestedAt  DateTime @default(now())
+}
+
