@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Search, MapPin, AlertCircle } from 'lucide-react'
-import { TrialMatchCriteria } from '@/lib/types'
+import { TrialMatchCriteria, CancerType } from '@/lib/types'
 
 interface Trial {
   id: string
@@ -94,7 +94,13 @@ export function ClinicalTrials() {
               id="search-term"
               placeholder="e.g., Breast Cancer"
               value={criteria.cancerType || ''}
-              onChange={(e) => setCriteria({ ...criteria, cancerType: e.target.value || undefined })}
+              onChange={(e) => {
+                const value = e.target.value
+                setCriteria({ 
+                  ...criteria, 
+                  cancerType: value ? (value as CancerType) : undefined 
+                })
+              }}
             />
           </div>
           <div>
