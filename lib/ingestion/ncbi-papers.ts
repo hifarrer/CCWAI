@@ -235,7 +235,7 @@ function parsePaperFromSummary(paperData: any): PubMedPaper | null {
     const keywords: string[] = []
     if (paperData.keywords) {
       if (Array.isArray(paperData.keywords)) {
-        keywords.push(...paperData.keywords.filter(k => k && typeof k === 'string'))
+        keywords.push(...paperData.keywords.filter((k: any) => k && typeof k === 'string'))
       } else if (typeof paperData.keywords === 'string') {
         keywords.push(paperData.keywords)
       }
