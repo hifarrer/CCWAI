@@ -122,7 +122,7 @@ async function searchPubMed(query: string, apiKey?: string, maxResults: number =
 }
 
 /**
- * Fetch paper details from PubMed using esummary
+ * Fetch paper details from PubMed using esummary (for metadata) and efetch (for abstracts)
  */
 async function fetchPaperDetails(ids: string[], apiKey?: string): Promise<any[]> {
   if (ids.length === 0) return []
@@ -136,28 +136,111 @@ async function fetchPaperDetails(ids: string[], apiKey?: string): Promise<any[]>
     
     await delay(100) // Rate limiting
     
-    const params: Record<string, string> = {
+    // First get metadata from esummary
+    const summaryParams: Record<string, string> = {
       db: 'pubmed',
       id: batch.join(','),
     }
     
-    const response = await queryNCBI('esummary', params, apiKey)
-    const result = response.result || response
+    const summaryResponse = await queryNCBI('esummary', summaryParams, apiKey)
+    const summaryResult = summaryResponse.result || summaryResponse
     
-    // Extract papers from result
-    const uids = result.uids || []
+    // Extract papers from esummary result
+    const uids = summaryResult.uids || []
+    const paperMap: Record<string, any> = {}
+    
     for (const uid of uids) {
-      const paperData = result[uid]
+      const paperData = summaryResult[uid]
       if (paperData) {
-        papers.push({
+        paperMap[uid] = {
           pubmedId: uid,
           ...paperData,
-        })
+        }
       }
     }
+    
+    // Now fetch abstracts using efetch (in smaller batches to avoid timeouts)
+    const efetchBatchSize = 50 // Smaller batches for efetch
+    for (let j = 0; j < batch.length; j += efetchBatchSize) {
+      const efetchBatch = batch.slice(j, j + efetchBatchSize)
+      
+      await delay(100) // Rate limiting
+      
+      const efetchParams: Record<string, string> = {
+        db: 'pubmed',
+        id: efetchBatch.join(','),
+        rettype: 'abstract',
+        retmode: 'xml',
+      }
+      
+      try {
+        const efetchResponse = await queryNCBI('efetch', efetchParams, apiKey, false)
+        
+        // Parse XML to extract abstracts
+        const abstracts = parseAbstractsFromXML(efetchResponse, efetchBatch)
+        
+        // Merge abstracts into paper data
+        for (const uid of efetchBatch) {
+          if (paperMap[uid] && abstracts[uid]) {
+            paperMap[uid].abstracttext = abstracts[uid]
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching abstracts for batch:`, error)
+        // Continue without abstracts for this batch
+      }
+    }
+    
+    // Add all papers to the result array
+    papers.push(...Object.values(paperMap))
   }
   
   return papers
+}
+
+/**
+ * Parse abstracts from efetch XML response
+ */
+function parseAbstractsFromXML(xmlString: string, paperIds: string[]): Record<string, string> {
+  const abstracts: Record<string, string> = {}
+  
+  try {
+    // Simple XML parsing - extract AbstractText from each PubmedArticle
+    const articleMatches = xmlString.matchAll(/<PubmedArticle>([\s\S]*?)<\/PubmedArticle>/g)
+    
+    for (const match of articleMatches) {
+      const articleXml = match[1]
+      
+      // Extract PMID
+      const pmidMatch = articleXml.match(/<PMID[^>]*>(\d+)<\/PMID>/)
+      if (!pmidMatch) continue
+      const pmid = pmidMatch[1]
+      
+      // Extract AbstractText
+      const abstractMatch = articleXml.match(/<AbstractText[^>]*>(.*?)<\/AbstractText>/s)
+      if (abstractMatch) {
+        let abstractText = abstractMatch[1]
+        // Remove XML tags and decode entities
+        abstractText = abstractText
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"')
+          .replace(/&apos;/g, "'")
+          .replace(/\s+/g, ' ')
+          .trim()
+        
+        if (abstractText) {
+          abstracts[pmid] = abstractText
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing XML abstracts:', error)
+  }
+  
+  return abstracts
 }
 
 /**
@@ -398,13 +481,24 @@ export async function ingestPapersFromNCBI() {
       // Fetch paper details in batches
       const papers = await fetchPaperDetails(paperIds, apiKey)
       
+      console.log(`Fetched ${papers.length} paper details for query: ${ncbiQuery.name || ncbiQuery.query}`)
+      
+      // Sample first paper to debug structure
+      if (papers.length > 0) {
+        console.log('Sample paper structure:', JSON.stringify(papers[0], null, 2).substring(0, 500))
+      }
+      
       let queryIngested = 0
+      let skippedNoAbstract = 0
+      let skippedExists = 0
+      let skippedError = 0
       
       for (const paperData of papers) {
         try {
           const parsedPaper = parsePaperFromSummary(paperData)
           
           if (!parsedPaper) {
+            skippedNoAbstract++
             // Log skipped papers
             await prisma.dataIngestionLog.create({
               data: {
@@ -428,6 +522,7 @@ export async function ingestPapersFromNCBI() {
           })
 
           if (existing) {
+            skippedExists++
             // Log as skipped
             await prisma.dataIngestionLog.create({
               data: {
@@ -502,11 +597,13 @@ export async function ingestPapersFromNCBI() {
           queryIngested++
           totalIngested++
         } catch (paperError) {
+          skippedError++
           console.error('Error ingesting paper:', paperError)
           errors.push(paperError as Error)
         }
       }
 
+      console.log(`Query summary - Ingested: ${queryIngested}, Skipped (no abstract): ${skippedNoAbstract}, Skipped (exists): ${skippedExists}, Errors: ${skippedError}`)
       console.log(`Ingested ${queryIngested} new papers from query: ${ncbiQuery.name || ncbiQuery.query}`)
     } catch (queryError) {
       console.error(`Error processing query ${ncbiQuery.name || ncbiQuery.query}:`, queryError)
