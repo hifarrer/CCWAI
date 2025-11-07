@@ -7,11 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Database, Search, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
-import { CancerType, TreatmentType } from '@/lib/types'
+import { CancerType } from '@/lib/types'
 
 type DatabaseType = 'pubmed' | 'protein' | 'nucleotide' | 'gene' | 'snp' | 'structure' | 'taxonomy'
 type QueryType = 'esearch' | 'esummary' | 'efetch'
-type SearchField = 'title' | 'abstract' | 'title-abstract' | 'all'
 type PublicationDate = 'all' | '1year' | '2years' | '5years' | '10years'
 type ArticleType = 
   | 'all'
@@ -84,16 +83,6 @@ const CANCER_TYPE_OPTIONS: { value: CancerType | 'custom'; label: string }[] = [
   { value: 'custom', label: 'Custom / Other' },
 ]
 
-const TREATMENT_TYPE_OPTIONS: { value: TreatmentType | 'none'; label: string }[] = [
-  { value: 'none', label: 'None' },
-  { value: 'chemotherapy', label: 'Chemotherapy' },
-  { value: 'immunotherapy', label: 'Immunotherapy' },
-  { value: 'radiation', label: 'Radiation Therapy' },
-  { value: 'surgery', label: 'Surgery' },
-  { value: 'targeted-therapy', label: 'Targeted Therapy' },
-  { value: 'hormone-therapy', label: 'Hormone Therapy' },
-  { value: 'stem-cell-transplant', label: 'Stem Cell Transplant' },
-]
 
 interface SearchResult {
   idList?: string[]
@@ -118,9 +107,7 @@ export function NCBIQuery() {
   // Query builder fields (for PubMed)
   const [cancerType, setCancerType] = useState<CancerType | 'custom' | 'none'>('none')
   const [customCancerType, setCustomCancerType] = useState('')
-  const [treatmentType, setTreatmentType] = useState<TreatmentType | 'none'>('none')
   const [additionalTerms, setAdditionalTerms] = useState('')
-  const [searchField, setSearchField] = useState<SearchField>('all')
   const [publicationDate, setPublicationDate] = useState<PublicationDate>('all')
   const [articleType, setArticleType] = useState<ArticleType>('all')
   
@@ -138,7 +125,7 @@ export function NCBIQuery() {
     if (database === 'pubmed' && queryType === 'esearch' && !isManuallyEdited) {
       buildQuery()
     }
-  }, [cancerType, customCancerType, treatmentType, additionalTerms, searchField, publicationDate, articleType, database, queryType, isManuallyEdited])
+  }, [cancerType, customCancerType, additionalTerms, publicationDate, articleType, database, queryType, isManuallyEdited])
 
   const buildQuery = () => {
     if (database !== 'pubmed' || queryType !== 'esearch') return
@@ -150,30 +137,18 @@ export function NCBIQuery() {
       if (cancerType === 'custom') {
         // Custom cancer type
         if (customCancerType.trim()) {
-          const field = getFieldSuffix(searchField)
-          parts.push(`${customCancerType.trim()}${field}`)
+          parts.push(customCancerType.trim())
         }
       } else {
         // Predefined cancer type
         const cancerTerm = formatCancerTerm(cancerType)
-        const field = getFieldSuffix(searchField)
-        parts.push(`${cancerTerm}${field}`)
+        parts.push(cancerTerm)
       }
-    }
-
-    // Treatment type
-    if (treatmentType && treatmentType !== 'none') {
-      const treatmentTerm = formatTreatmentTerm(treatmentType)
-      const field = getFieldSuffix(searchField)
-      parts.push(`${treatmentTerm}${field}`)
     }
 
     // Additional terms
     if (additionalTerms.trim()) {
-      const terms = additionalTerms.trim().split(/\s+/).map(t => {
-        const field = getFieldSuffix(searchField)
-        return `${t}${field}`
-      })
+      const terms = additionalTerms.trim().split(/\s+/)
       parts.push(...terms)
     }
 
@@ -234,32 +209,6 @@ export function NCBIQuery() {
     return cancerNames[type] || 'cancer'
   }
 
-  const formatTreatmentTerm = (type: TreatmentType): string => {
-    const treatmentNames: Record<TreatmentType, string> = {
-      'chemotherapy': 'chemotherapy',
-      'immunotherapy': 'immunotherapy',
-      'radiation': 'radiation therapy',
-      'surgery': 'surgery',
-      'targeted-therapy': 'targeted therapy',
-      'hormone-therapy': 'hormone therapy',
-      'stem-cell-transplant': 'stem cell transplant',
-      'other': 'treatment',
-    }
-    return treatmentNames[type] || 'treatment'
-  }
-
-  const getFieldSuffix = (field: SearchField): string => {
-    switch (field) {
-      case 'title':
-        return '[Title]'
-      case 'abstract':
-        return '[Abstract]'
-      case 'title-abstract':
-        return '[Title/Abstract]'
-      default:
-        return ''
-    }
-  }
 
   const getDateFilter = (dateRange: PublicationDate): string | null => {
     const now = new Date()
@@ -548,25 +497,6 @@ export function NCBIQuery() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="treatmentType">Treatment Type (Optional)</Label>
-                <Select 
-                  value={treatmentType} 
-                  onValueChange={(value) => setTreatmentType(value as TreatmentType | 'none')}
-                >
-                  <SelectTrigger id="treatmentType">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TREATMENT_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="additionalTerms">Additional Keywords (Optional)</Label>
                 <Input
                   id="additionalTerms"
@@ -579,43 +509,23 @@ export function NCBIQuery() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="searchField">Search Field</Label>
-                  <Select 
-                    value={searchField} 
-                    onValueChange={(value) => setSearchField(value as SearchField)}
-                  >
-                    <SelectTrigger id="searchField">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Fields</SelectItem>
-                      <SelectItem value="title">Title</SelectItem>
-                      <SelectItem value="abstract">Abstract</SelectItem>
-                      <SelectItem value="title-abstract">Title/Abstract</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="publicationDate">Publication Date</Label>
-                  <Select 
-                    value={publicationDate} 
-                    onValueChange={(value) => setPublicationDate(value as PublicationDate)}
-                  >
-                    <SelectTrigger id="publicationDate">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Time</SelectItem>
-                      <SelectItem value="1year">Last Year</SelectItem>
-                      <SelectItem value="2years">Last 2 Years</SelectItem>
-                      <SelectItem value="5years">Last 5 Years</SelectItem>
-                      <SelectItem value="10years">Last 10 Years</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="publicationDate">Publication Date</Label>
+                <Select 
+                  value={publicationDate} 
+                  onValueChange={(value) => setPublicationDate(value as PublicationDate)}
+                >
+                  <SelectTrigger id="publicationDate">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="1year">Last Year</SelectItem>
+                    <SelectItem value="2years">Last 2 Years</SelectItem>
+                    <SelectItem value="5years">Last 5 Years</SelectItem>
+                    <SelectItem value="10years">Last 10 Years</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

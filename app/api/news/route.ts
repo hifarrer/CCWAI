@@ -14,12 +14,37 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = parseInt(searchParams.get('offset') || '0')
     const cancerType = searchParams.get('cancerType')
+    const search = searchParams.get('search')
 
     const where: any = {}
     if (cancerType) {
       where.cancerTypes = {
         has: cancerType,
       }
+    }
+
+    // Add keyword search in title and content
+    if (search) {
+      where.OR = [
+        {
+          title: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          content: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          summary: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ]
     }
 
     const articles = await prisma.newsArticle.findMany({

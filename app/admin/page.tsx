@@ -39,6 +39,16 @@ interface RssFeed {
   updatedAt: string
 }
 
+interface NcbiQuery {
+  id: string
+  query: string
+  name: string | null
+  description: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export default function AdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -53,12 +63,17 @@ export default function AdminPage() {
   const [editingRssFeed, setEditingRssFeed] = useState<RssFeed | null>(null)
   const [rssFeedForm, setRssFeedForm] = useState({ url: '', name: '', description: '', isActive: true })
   const [showAddRssFeed, setShowAddRssFeed] = useState(false)
+  const [ncbiQueries, setNcbiQueries] = useState<NcbiQuery[]>([])
+  const [editingNcbiQuery, setEditingNcbiQuery] = useState<NcbiQuery | null>(null)
+  const [ncbiQueryForm, setNcbiQueryForm] = useState({ query: '', name: '', description: '', isActive: true })
+  const [showAddNcbiQuery, setShowAddNcbiQuery] = useState(false)
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'admin') {
       fetchStats()
       fetchUsers()
       fetchRssFeeds()
+      fetchNcbiQueries()
     }
   }, [session, status])
 
@@ -229,6 +244,89 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error deleting RSS feed:', error)
       alert('Error deleting RSS feed')
+    }
+  }
+
+  const fetchNcbiQueries = async () => {
+    try {
+      const res = await fetch('/api/admin/ncbi-queries')
+      if (res.ok) {
+        const data = await res.json()
+        setNcbiQueries(data.queries || [])
+      }
+    } catch (error) {
+      console.error('Error fetching NCBI queries:', error)
+    }
+  }
+
+  const handleAddNcbiQuery = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const res = await fetch('/api/admin/ncbi-queries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ncbiQueryForm),
+      })
+      if (res.ok) {
+        setNcbiQueryForm({ query: '', name: '', description: '', isActive: true })
+        setShowAddNcbiQuery(false)
+        fetchNcbiQueries()
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Failed to add NCBI query')
+      }
+    } catch (error) {
+      console.error('Error adding NCBI query:', error)
+      alert('Error adding NCBI query')
+    }
+  }
+
+  const handleEditNcbiQuery = (query: NcbiQuery) => {
+    setEditingNcbiQuery(query)
+    setNcbiQueryForm({
+      query: query.query,
+      name: query.name || '',
+      description: query.description || '',
+      isActive: query.isActive,
+    })
+  }
+
+  const handleSaveNcbiQuery = async () => {
+    if (!editingNcbiQuery) return
+    try {
+      const res = await fetch(`/api/admin/ncbi-queries/${editingNcbiQuery.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ncbiQueryForm),
+      })
+      if (res.ok) {
+        setEditingNcbiQuery(null)
+        setNcbiQueryForm({ query: '', name: '', description: '', isActive: true })
+        fetchNcbiQueries()
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Failed to update NCBI query')
+      }
+    } catch (error) {
+      console.error('Error updating NCBI query:', error)
+      alert('Error updating NCBI query')
+    }
+  }
+
+  const handleDeleteNcbiQuery = async (queryId: string) => {
+    if (!confirm('Are you sure you want to delete this NCBI query?')) return
+    try {
+      const res = await fetch(`/api/admin/ncbi-queries/${queryId}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        fetchNcbiQueries()
+      } else {
+        alert('Failed to delete NCBI query')
+      }
+    } catch (error) {
+      console.error('Error deleting NCBI query:', error)
+      alert('Error deleting NCBI query')
     }
   }
 
@@ -637,6 +735,231 @@ export default function AdminPage() {
                         onClick={() => {
                           setEditingRssFeed(null)
                           setRssFeedForm({ url: '', name: '', description: '', isActive: true })
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* NCBI Query Management */}
+        <Card className="mt-8">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>NCBI (PubMed) Query Management</CardTitle>
+                <CardDescription>Manage PubMed search queries used for paper ingestion</CardDescription>
+              </div>
+              <Button onClick={() => setShowAddNcbiQuery(true)}>Add NCBI Query</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Name</th>
+                    <th className="text-left p-2">Query</th>
+                    <th className="text-left p-2">Description</th>
+                    <th className="text-left p-2">Status</th>
+                    <th className="text-left p-2">Created</th>
+                    <th className="text-left p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ncbiQueries.map((query) => (
+                    <tr key={query.id} className="border-b">
+                      <td className="p-2">{query.name || 'N/A'}</td>
+                      <td className="p-2">
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                          {query.query.length > 60 ? query.query.substring(0, 60) + '...' : query.query}
+                        </code>
+                      </td>
+                      <td className="p-2 text-sm text-muted-foreground">
+                        {query.description || 'N/A'}
+                      </td>
+                      <td className="p-2">
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            query.isActive
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {query.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="p-2 text-sm">
+                        {new Date(query.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditNcbiQuery(query)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteNcbiQuery(query.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {ncbiQueries.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No NCBI queries configured. Add one to get started.
+                </div>
+              )}
+            </div>
+
+            {/* Add NCBI Query Modal */}
+            {showAddNcbiQuery && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <Card className="w-full max-w-md">
+                  <CardHeader>
+                    <CardTitle>Add NCBI Query</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <form onSubmit={handleAddNcbiQuery} className="space-y-4">
+                      <div>
+                        <Label>Query *</Label>
+                        <textarea
+                          className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={ncbiQueryForm.query}
+                          onChange={(e) =>
+                            setNcbiQueryForm({ ...ncbiQueryForm, query: e.target.value })
+                          }
+                          placeholder="breast cancer AND hasabstract[text] AND 2024:2025[Publication Date]"
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter a PubMed search query string
+                        </p>
+                      </div>
+                      <div>
+                        <Label>Name (Optional)</Label>
+                        <Input
+                          value={ncbiQueryForm.name}
+                          onChange={(e) =>
+                            setNcbiQueryForm({ ...ncbiQueryForm, name: e.target.value })
+                          }
+                          placeholder="Friendly name for this query"
+                        />
+                      </div>
+                      <div>
+                        <Label>Description (Optional)</Label>
+                        <Input
+                          value={ncbiQueryForm.description}
+                          onChange={(e) =>
+                            setNcbiQueryForm({ ...ncbiQueryForm, description: e.target.value })
+                          }
+                          placeholder="Brief description"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="ncbiIsActive"
+                          checked={ncbiQueryForm.isActive}
+                          onChange={(e) =>
+                            setNcbiQueryForm({ ...ncbiQueryForm, isActive: e.target.checked })
+                          }
+                          className="rounded"
+                        />
+                        <Label htmlFor="ncbiIsActive">Active</Label>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="submit">Add Query</Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setShowAddNcbiQuery(false)
+                            setNcbiQueryForm({ query: '', name: '', description: '', isActive: true })
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Edit NCBI Query Modal */}
+            {editingNcbiQuery && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <Card className="w-full max-w-md">
+                  <CardHeader>
+                    <CardTitle>Edit NCBI Query</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Query *</Label>
+                      <textarea
+                        className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={ncbiQueryForm.query}
+                        onChange={(e) =>
+                          setNcbiQueryForm({ ...ncbiQueryForm, query: e.target.value })
+                        }
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter a PubMed search query string
+                      </p>
+                    </div>
+                    <div>
+                      <Label>Name (Optional)</Label>
+                      <Input
+                        value={ncbiQueryForm.name}
+                        onChange={(e) =>
+                          setNcbiQueryForm({ ...ncbiQueryForm, name: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label>Description (Optional)</Label>
+                      <Input
+                        value={ncbiQueryForm.description}
+                        onChange={(e) =>
+                          setNcbiQueryForm({ ...ncbiQueryForm, description: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="editNcbiIsActive"
+                        checked={ncbiQueryForm.isActive}
+                        onChange={(e) =>
+                          setNcbiQueryForm({ ...ncbiQueryForm, isActive: e.target.checked })
+                        }
+                        className="rounded"
+                      />
+                      <Label htmlFor="editNcbiIsActive">Active</Label>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveNcbiQuery}>Save</Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingNcbiQuery(null)
+                          setNcbiQueryForm({ query: '', name: '', description: '', isActive: true })
                         }}
                       >
                         Cancel

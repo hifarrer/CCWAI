@@ -3,8 +3,6 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { Header } from '@/components/layout/Header'
 import { SessionProvider } from '@/components/providers/SessionProvider'
-import { DashboardGrid } from '@/components/layout/DashboardGrid'
-import { NewHopeFinder } from '@/components/widgets/NewHopeFinder'
 import { ClinicalTrials } from '@/components/widgets/ClinicalTrials'
 import { LatestNews } from '@/components/widgets/LatestNews'
 import { AskTheAI } from '@/components/widgets/AskTheAI'
@@ -34,7 +32,7 @@ export default async function DashboardPage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <NewHopeFinder />
+            <NCBIQuery />
             <ClinicalTrials />
             <LatestNews />
             <AskTheAI />
@@ -43,7 +41,6 @@ export default async function DashboardPage() {
             <CancerTypeOverview />
             <EmotionalSupport />
             <DailyCheckIn />
-            <NCBIQuery />
           </div>
         </main>
       </div>

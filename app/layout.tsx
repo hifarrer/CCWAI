@@ -8,7 +8,7 @@ import { authOptions } from '@/lib/auth'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Cancer Research Companion',
+  title: 'Cure Cancer With Ai',
   description: 'Your trusted source for up-to-date cancer research, clinical trials, and support resources',
 }
 
