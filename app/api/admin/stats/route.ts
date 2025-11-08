@@ -59,12 +59,50 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Get research paper statistics
+    const totalPapers = await prisma.researchPaper.count()
+
+    // Get papers grouped by cancer type
+    const allPapers = await prisma.researchPaper.findMany({
+      select: {
+        cancerTypes: true,
+      },
+    })
+
+    // Count papers by cancer type (papers can have multiple cancer types)
+    const cancerTypeCounts: Record<string, number> = {}
+    allPapers.forEach((paper) => {
+      if (paper.cancerTypes && paper.cancerTypes.length > 0) {
+        paper.cancerTypes.forEach((cancerType) => {
+          cancerTypeCounts[cancerType] = (cancerTypeCounts[cancerType] || 0) + 1
+        })
+      } else {
+        // Papers with no cancer type
+        cancerTypeCounts['other'] = (cancerTypeCounts['other'] || 0) + 1
+      }
+    })
+
+    // Calculate total occurrences (may be > totalPapers since papers can have multiple types)
+    const totalOccurrences = Object.values(cancerTypeCounts).reduce((sum, count) => sum + count, 0)
+
+    // Convert to array format for easier frontend consumption
+    // Percentage is based on total occurrences, not total papers (since papers can have multiple types)
+    const cancerTypeStats = Object.entries(cancerTypeCounts)
+      .map(([cancerType, count]) => ({
+        cancerType,
+        count,
+        percentage: totalOccurrences > 0 ? Math.round((count / totalOccurrences) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count) // Sort by count descending
+
     return NextResponse.json({
       totalUsers,
       totalCheckIns,
       totalChatSessions,
       activeUsersLast30Days,
       newUsersLast30Days,
+      totalPapers,
+      cancerTypeStats,
     })
   } catch (error) {
     console.error('Error fetching admin stats:', error)

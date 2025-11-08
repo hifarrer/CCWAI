@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CancerTypeBarChart, CancerTypePieChart } from '@/components/admin/CancerTypeChart'
 
 interface UsageStats {
   totalUsers: number
@@ -14,6 +15,12 @@ interface UsageStats {
   totalChatSessions: number
   activeUsersLast30Days: number
   newUsersLast30Days: number
+  totalPapers: number
+  cancerTypeStats: Array<{
+    cancerType: string
+    count: number
+    percentage: number
+  }>
 }
 
 interface User {
@@ -385,7 +392,7 @@ export default function AdminPage() {
         </div>
 
         {/* Usage Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Total Users</CardTitle>
@@ -418,7 +425,50 @@ export default function AdminPage() {
               <p className="text-3xl font-bold">{stats?.activeUsersLast30Days || 0}</p>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Total Articles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{stats?.totalPapers || 0}</p>
+              <p className="text-sm text-muted-foreground mt-1">Research Papers</p>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Research Papers by Cancer Type */}
+        {stats && stats.cancerTypeStats && stats.cancerTypeStats.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Articles by Cancer Type</CardTitle>
+                <CardDescription>
+                  Distribution of research papers by cancer type
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CancerTypeBarChart
+                  data={stats.cancerTypeStats}
+                  total={stats.totalPapers}
+                />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Cancer Type Distribution</CardTitle>
+                <CardDescription>
+                  Percentage breakdown of articles by cancer type
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CancerTypePieChart
+                  data={stats.cancerTypeStats}
+                  total={stats.totalPapers}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* User Management */}
         <Card>
