@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db/client'
+import { Prisma } from '@prisma/client'
 
 /**
  * Utility function to extract drug name from OpenFDA label metadata
@@ -54,7 +55,7 @@ export async function fixFdaDrugNames() {
     where: {
       drugName: 'Unknown Drug',
       metadata: {
-        not: null,
+        not: Prisma.JsonNull,
       },
     },
   })
@@ -91,12 +92,10 @@ export async function fixFdaDrugNames() {
   console.log('Fixing URLs with application type prefixes...')
   const allApprovals = await prisma.fdaApproval.findMany({
     where: {
-      url: {
-        not: null,
-      },
-      applicationNumber: {
-        not: null,
-      },
+      AND: [
+        { url: { not: null } },
+        { applicationNumber: { not: null } },
+      ],
     },
   })
 
