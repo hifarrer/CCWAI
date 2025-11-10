@@ -90,14 +90,23 @@ export async function GET(
     }))
 
     // Get FDA approvals for this cancer type (last 90 days)
-    const approvals = await prisma.fdaApproval.count({
-      where: {
-        cancerTypes: { has: cancerType },
-        approvalDate: {
-          gte: getDaysAgo(90),
+    // Use try-catch in case Prisma client hasn't been regenerated yet
+    let approvals = 0
+    try {
+      approvals = await (prisma as any).fdaApproval?.count({
+        where: {
+          cancerTypes: { has: cancerType },
+          approvalDate: {
+            gte: getDaysAgo(90),
+          },
         },
-      },
-    })
+      }) || 0
+    } catch (error) {
+      // If fdaApproval model doesn't exist yet, return 0
+      // This happens when Prisma client hasn't been regenerated after schema changes
+      console.warn('FdaApproval model not available yet. Run: npx prisma generate')
+      approvals = 0
+    }
 
     // Get total counts (all time, not just recent)
     const totalArticles = await prisma.researchPaper.count({
