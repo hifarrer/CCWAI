@@ -55,6 +55,7 @@ interface OpenFDAResponse {
 
 /**
  * Fetches FDA drug approvals from OpenFDA API for a specific cancer type
+ * Tries multiple search strategies to find relevant approvals
  */
 async function fetchFdaApprovalsForCancerType(
   cancerType: CancerType,
@@ -62,55 +63,111 @@ async function fetchFdaApprovalsForCancerType(
 ): Promise<OpenFDALabel[]> {
   const searchTerms = CANCER_TYPE_SEARCH_TERMS[cancerType] || [cancerType]
   
-  // Build search query - search in indications_and_usage, purpose, and brand_name fields
-  // OpenFDA uses Lucene query syntax
-  // We'll search for cancer-related terms in multiple fields
-  const searchQueries = searchTerms.map(term => 
-    `indications_and_usage:"${term}" OR purpose:"${term}" OR brand_name:"${term}" OR generic_name:"${term}"`
-  ).join(' OR ')
-  
-  // Also filter for recent approvals (last 5 years) by searching effective_time
-  // OpenFDA date format: YYYYMMDD, and we use range query [YYYYMMDD TO *]
+  // Try multiple search strategies
+  const searchStrategies = [
+    // Strategy 1: Simple search in indications_and_usage with quotes
+    `indications_and_usage:"${searchTerms[0]}"`,
+    // Strategy 2: Search without quotes (partial match)
+    `indications_and_usage:${searchTerms[0]}`,
+    // Strategy 3: Search in purpose field
+    `purpose:"${searchTerms[0]}"`,
+    // Strategy 4: Search in generic_name (for cancer drugs)
+    `generic_name:"${searchTerms[0]}"`,
+  ]
+
+  // Filter for recent approvals (last 5 years)
   const fiveYearsAgo = new Date()
   fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5)
-  const year = fiveYearsAgo.getFullYear()
-  const month = String(fiveYearsAgo.getMonth() + 1).padStart(2, '0')
-  const day = String(fiveYearsAgo.getDate()).padStart(2, '0')
-  const dateStr = `${year}${month}${day}` // YYYYMMDD format
-  
-  // Build the search query - combine cancer terms with date filter
-  const searchQuery = `(${searchQueries}) AND effective_time:[${dateStr}+TO+*]`
-  
-  const params = new URLSearchParams({
-    search: searchQuery,
-    limit: limit.toString(),
-    skip: '0',
-  })
 
-  try {
-    const response = await fetch(`${OPENFDA_BASE_URL}?${params.toString()}`, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    })
+  for (const searchQuery of searchStrategies) {
+    try {
+      const params = new URLSearchParams({
+        search: searchQuery,
+        limit: '100', // Get more results to filter
+        skip: '0',
+      })
 
-    if (!response.ok) {
-      console.error(`OpenFDA API error for ${cancerType}: ${response.status} ${response.statusText}`)
-      return []
+      const url = `${OPENFDA_BASE_URL}?${params.toString()}`
+      console.log(`Querying OpenFDA for ${cancerType}: ${searchQuery}`)
+      
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        // Try next strategy if this one fails
+        if (response.status === 500) {
+          console.warn(`OpenFDA returned 500 for query: ${searchQuery}, trying next strategy...`)
+          continue
+        }
+        const errorText = await response.text()
+        console.error(`OpenFDA API error for ${cancerType}: ${response.status} ${response.statusText}`)
+        console.error(`Error details: ${errorText.substring(0, 500)}`)
+        continue
+      }
+
+      const data: OpenFDAResponse = await response.json()
+
+      if (data.error) {
+        console.warn(`OpenFDA API error for ${cancerType}: ${data.error.message}, trying next strategy...`)
+        continue
+      }
+
+      const results = data.results || []
+      
+      if (results.length === 0) {
+        // No results, try next strategy
+        continue
+      }
+
+      // Filter for recent approvals and cancer-related content
+      const filteredResults = results.filter(label => {
+        // Check if label has effective_time (approval date)
+        if (!label.effective_time) return false
+        
+        // Parse date
+        const dateStr = label.effective_time
+        if (dateStr.length >= 8) {
+          const year = parseInt(dateStr.substring(0, 4))
+          const month = parseInt(dateStr.substring(4, 6)) - 1
+          const day = parseInt(dateStr.substring(6, 8))
+          const labelDate = new Date(year, month, day)
+          
+          // Must be within last 5 years
+          if (labelDate < fiveYearsAgo) return false
+        } else {
+          return false
+        }
+
+        // Check if it's actually cancer-related by looking at indication text
+        const indicationText = [
+          ...(label.indications_and_usage || []),
+          ...(label.purpose || []),
+        ].join(' ').toLowerCase()
+
+        // Must contain cancer-related keywords
+        const hasCancerKeyword = searchTerms.some(term => 
+          indicationText.includes(term.toLowerCase())
+        )
+
+        return hasCancerKeyword
+      })
+
+      if (filteredResults.length > 0) {
+        console.log(`Found ${filteredResults.length} FDA approvals for ${cancerType} using query: ${searchQuery}`)
+        return filteredResults.slice(0, limit)
+      }
+    } catch (error) {
+      console.warn(`Error with search strategy "${searchQuery}":`, error)
+      // Continue to next strategy
+      continue
     }
-
-    const data: OpenFDAResponse = await response.json()
-
-    if (data.error) {
-      console.error(`OpenFDA API error for ${cancerType}:`, data.error.message)
-      return []
-    }
-
-    return data.results || []
-  } catch (error) {
-    console.error(`Error fetching FDA approvals for ${cancerType}:`, error)
-    return []
   }
+
+  console.log(`No FDA approvals found for ${cancerType} after trying all search strategies`)
+  return []
 }
 
 /**
