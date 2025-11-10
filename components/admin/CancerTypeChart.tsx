@@ -154,8 +154,9 @@ export function CancerTypePieChart({ data, total }: CancerTypeChartProps) {
             stroke="white"
             strokeWidth="2"
             className="hover:opacity-80 transition-opacity cursor-pointer"
-            title={`${segment.label}: ${segment.count} (${segment.percentage}%)`}
-          />
+          >
+            <title>{`${segment.label}: ${segment.count} (${segment.percentage}%)`}</title>
+          </path>
         ))}
       </svg>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-full max-w-md">

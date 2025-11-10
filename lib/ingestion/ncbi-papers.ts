@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/client'
-import { generateLaypersonSummary, generateClinicalSummary } from '@/lib/ai/summarization'
+// AI summarization removed for bulk ingestion to reduce costs
+// import { generateLaypersonSummary, generateClinicalSummary } from '@/lib/ai/summarization'
 
 const NCBI_BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils'
 const MAX_RESULTS_PER_QUERY = 1000
@@ -553,13 +554,10 @@ export async function ingestPapersFromNCBI() {
             parsedPaper.abstract
           )
 
-          // Generate summaries
-          const summaryPlain = parsedPaper.abstract
-            ? await generateLaypersonSummary(parsedPaper.abstract)
-            : null
-          const summaryClinical = parsedPaper.abstract
-            ? await generateClinicalSummary(parsedPaper.abstract)
-            : null
+          // Skip AI summary generation for bulk ingestion to reduce costs
+          // Summaries can be generated on-demand later if needed
+          const summaryPlain = null
+          const summaryClinical = null
 
           // Create paper
           const paper = await prisma.researchPaper.create({

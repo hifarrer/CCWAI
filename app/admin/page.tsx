@@ -8,6 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CancerTypeBarChart, CancerTypePieChart } from '@/components/admin/CancerTypeChart'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface UsageStats {
   totalUsers: number
@@ -56,6 +63,23 @@ interface NcbiQuery {
   updatedAt: string
 }
 
+interface ResearchPaper {
+  id: string
+  pubmedId: string
+  title: string
+  abstract: string | null
+  authors: string[]
+  journal: string | null
+  publicationDate: string | null
+  cancerTypes: string[]
+  treatmentTypes: string[]
+  keywords: string[]
+  fullTextUrl: string | null
+  summaryPlain: string | null
+  summaryClinical: string | null
+  ingestedAt: string
+}
+
 export default function AdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -74,6 +98,15 @@ export default function AdminPage() {
   const [editingNcbiQuery, setEditingNcbiQuery] = useState<NcbiQuery | null>(null)
   const [ncbiQueryForm, setNcbiQueryForm] = useState({ query: '', name: '', description: '', isActive: true })
   const [showAddNcbiQuery, setShowAddNcbiQuery] = useState(false)
+  const [articles, setArticles] = useState<ResearchPaper[]>([])
+  const [selectedArticle, setSelectedArticle] = useState<ResearchPaper | null>(null)
+  const [articleFilters, setArticleFilters] = useState({ 
+    cancerType: 'all', 
+    treatmentType: 'all', 
+    search: '' 
+  })
+  const [articlePagination, setArticlePagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 })
+  const [loadingArticles, setLoadingArticles] = useState(false)
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'admin') {
@@ -335,6 +368,57 @@ export default function AdminPage() {
       console.error('Error deleting NCBI query:', error)
       alert('Error deleting NCBI query')
     }
+  }
+
+  const fetchArticles = async () => {
+    setLoadingArticles(true)
+    try {
+      const params = new URLSearchParams()
+      if (articleFilters.cancerType !== 'all') {
+        params.append('cancerType', articleFilters.cancerType)
+      }
+      if (articleFilters.treatmentType !== 'all') {
+        params.append('treatmentType', articleFilters.treatmentType)
+      }
+      if (articleFilters.search) {
+        params.append('search', articleFilters.search)
+      }
+      params.append('page', articlePagination.page.toString())
+      params.append('limit', articlePagination.limit.toString())
+
+      const res = await fetch(`/api/admin/articles?${params.toString()}`)
+      if (res.ok) {
+        const data = await res.json()
+        setArticles(data.papers || [])
+        setArticlePagination((prev) => ({
+          ...prev,
+          total: data.total || 0,
+          totalPages: data.totalPages || 0,
+        }))
+      }
+    } catch (error) {
+      console.error('Error fetching articles:', error)
+    } finally {
+      setLoadingArticles(false)
+    }
+  }
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'admin') {
+      fetchArticles()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [articleFilters, articlePagination.page, status, session])
+
+  const handleArticleFilterChange = (key: string, value: string) => {
+    setArticleFilters({ ...articleFilters, [key]: value })
+    setArticlePagination({ ...articlePagination, page: 1 }) // Reset to first page
+  }
+
+  const handleArticleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setArticlePagination({ ...articlePagination, page: 1 })
+    fetchArticles()
   }
 
   if (status === 'loading') {
@@ -1014,6 +1098,344 @@ export default function AdminPage() {
                       >
                         Cancel
                       </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Article Management */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Article Management</CardTitle>
+            <CardDescription>
+              View and manage all research papers from PubMed
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Filters */}
+            <div className="mb-6 space-y-4">
+              <form onSubmit={handleArticleSearch} className="flex flex-wrap gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <Label>Search</Label>
+                  <Input
+                    type="text"
+                    placeholder="Search by title or abstract..."
+                    value={articleFilters.search}
+                    onChange={(e) =>
+                      setArticleFilters({ ...articleFilters, search: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="w-[180px]">
+                  <Label>Cancer Type</Label>
+                  <Select
+                    value={articleFilters.cancerType}
+                    onValueChange={(value) => handleArticleFilterChange('cancerType', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="breast">Breast</SelectItem>
+                      <SelectItem value="lung">Lung</SelectItem>
+                      <SelectItem value="colorectal">Colorectal</SelectItem>
+                      <SelectItem value="prostate">Prostate</SelectItem>
+                      <SelectItem value="pancreatic">Pancreatic</SelectItem>
+                      <SelectItem value="liver">Liver</SelectItem>
+                      <SelectItem value="stomach">Stomach</SelectItem>
+                      <SelectItem value="esophageal">Esophageal</SelectItem>
+                      <SelectItem value="bladder">Bladder</SelectItem>
+                      <SelectItem value="kidney">Kidney</SelectItem>
+                      <SelectItem value="cervical">Cervical</SelectItem>
+                      <SelectItem value="ovarian">Ovarian</SelectItem>
+                      <SelectItem value="leukemia">Leukemia</SelectItem>
+                      <SelectItem value="lymphoma">Lymphoma</SelectItem>
+                      <SelectItem value="melanoma">Melanoma</SelectItem>
+                      <SelectItem value="brain">Brain</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-[180px]">
+                  <Label>Treatment Type</Label>
+                  <Select
+                    value={articleFilters.treatmentType}
+                    onValueChange={(value) => handleArticleFilterChange('treatmentType', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="immunotherapy">Immunotherapy</SelectItem>
+                      <SelectItem value="chemotherapy">Chemotherapy</SelectItem>
+                      <SelectItem value="radiation">Radiation</SelectItem>
+                      <SelectItem value="targeted-therapy">Targeted Therapy</SelectItem>
+                      <SelectItem value="hormone-therapy">Hormone Therapy</SelectItem>
+                      <SelectItem value="stem-cell-transplant">Stem Cell Transplant</SelectItem>
+                      <SelectItem value="surgery">Surgery</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button type="submit">Search</Button>
+                </div>
+              </form>
+            </div>
+
+            {/* Articles Table */}
+            {loadingArticles ? (
+              <div className="text-center py-8">Loading articles...</div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Title</th>
+                        <th className="text-left p-2">Authors</th>
+                        <th className="text-left p-2">Journal</th>
+                        <th className="text-left p-2">Publication Date</th>
+                        <th className="text-left p-2">Cancer Types</th>
+                        <th className="text-left p-2">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {articles.map((article) => (
+                        <tr key={article.id} className="border-b hover:bg-gray-50">
+                          <td className="p-2">
+                            <button
+                              onClick={() => setSelectedArticle(article)}
+                              className="text-left text-blue-600 hover:underline font-medium"
+                            >
+                              {article.title.length > 80
+                                ? article.title.substring(0, 80) + '...'
+                                : article.title}
+                            </button>
+                          </td>
+                          <td className="p-2 text-sm">
+                            {article.authors.length > 0
+                              ? article.authors.slice(0, 2).join(', ') +
+                                (article.authors.length > 2 ? ' et al.' : '')
+                              : 'N/A'}
+                          </td>
+                          <td className="p-2 text-sm">{article.journal || 'N/A'}</td>
+                          <td className="p-2 text-sm">
+                            {article.publicationDate
+                              ? new Date(article.publicationDate).toLocaleDateString()
+                              : 'N/A'}
+                          </td>
+                          <td className="p-2">
+                            <div className="flex flex-wrap gap-1">
+                              {article.cancerTypes.length > 0
+                                ? article.cancerTypes.slice(0, 2).map((type) => (
+                                    <span
+                                      key={type}
+                                      className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                                    >
+                                      {type}
+                                    </span>
+                                  ))
+                                : 'N/A'}
+                              {article.cancerTypes.length > 2 && (
+                                <span className="text-xs text-muted-foreground">
+                                  +{article.cancerTypes.length - 2}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedArticle(article)}
+                            >
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {articles.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No articles found
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {articlePagination.totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {((articlePagination.page - 1) * articlePagination.limit) + 1} to{' '}
+                      {Math.min(articlePagination.page * articlePagination.limit, articlePagination.total)} of{' '}
+                      {articlePagination.total} articles
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setArticlePagination({ ...articlePagination, page: articlePagination.page - 1 })
+                        }
+                        disabled={articlePagination.page === 1}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setArticlePagination({ ...articlePagination, page: articlePagination.page + 1 })
+                        }
+                        disabled={articlePagination.page >= articlePagination.totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Article Detail Modal */}
+            {selectedArticle && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <CardTitle className="text-xl mb-2">{selectedArticle.title}</CardTitle>
+                        <CardDescription>
+                          {selectedArticle.journal && (
+                            <span className="block mb-1">{selectedArticle.journal}</span>
+                          )}
+                          {selectedArticle.publicationDate && (
+                            <span className="block">
+                              Published: {new Date(selectedArticle.publicationDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedArticle(null)}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Authors */}
+                    {selectedArticle.authors.length > 0 && (
+                      <div>
+                        <Label className="font-semibold">Authors</Label>
+                        <p className="text-sm">{selectedArticle.authors.join(', ')}</p>
+                      </div>
+                    )}
+
+                    {/* Cancer Types */}
+                    {selectedArticle.cancerTypes.length > 0 && (
+                      <div>
+                        <Label className="font-semibold">Cancer Types</Label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedArticle.cancerTypes.map((type) => (
+                            <span
+                              key={type}
+                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                            >
+                              {type}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Treatment Types */}
+                    {selectedArticle.treatmentTypes.length > 0 && (
+                      <div>
+                        <Label className="font-semibold">Treatment Types</Label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedArticle.treatmentTypes.map((type) => (
+                            <span
+                              key={type}
+                              className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
+                            >
+                              {type}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Keywords */}
+                    {selectedArticle.keywords.length > 0 && (
+                      <div>
+                        <Label className="font-semibold">Keywords</Label>
+                        <p className="text-sm">{selectedArticle.keywords.join(', ')}</p>
+                      </div>
+                    )}
+
+                    {/* Abstract */}
+                    {selectedArticle.abstract && (
+                      <div>
+                        <Label className="font-semibold">Abstract</Label>
+                        <p className="text-sm whitespace-pre-wrap mt-1">{selectedArticle.abstract}</p>
+                      </div>
+                    )}
+
+                    {/* Plain Summary */}
+                    {selectedArticle.summaryPlain && (
+                      <div>
+                        <Label className="font-semibold">Plain Language Summary</Label>
+                        <p className="text-sm whitespace-pre-wrap mt-1">{selectedArticle.summaryPlain}</p>
+                      </div>
+                    )}
+
+                    {/* Clinical Summary */}
+                    {selectedArticle.summaryClinical && (
+                      <div>
+                        <Label className="font-semibold">Clinical Summary</Label>
+                        <p className="text-sm whitespace-pre-wrap mt-1">{selectedArticle.summaryClinical}</p>
+                      </div>
+                    )}
+
+                    {/* Links */}
+                    <div className="flex gap-2 pt-4 border-t">
+                      {selectedArticle.fullTextUrl && (
+                        <Button asChild variant="default">
+                          <a
+                            href={selectedArticle.fullTextUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            View on PubMed
+                          </a>
+                        </Button>
+                      )}
+                      <Button asChild variant="outline">
+                        <a
+                          href={`https://www.ncbi.nlm.nih.gov/pubmed/${selectedArticle.pubmedId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open Original Article
+                        </a>
+                      </Button>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="text-xs text-muted-foreground pt-4 border-t">
+                      <p>PubMed ID: {selectedArticle.pubmedId}</p>
+                      <p>
+                        Ingested: {new Date(selectedArticle.ingestedAt).toLocaleString()}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
