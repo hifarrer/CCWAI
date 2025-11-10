@@ -57,14 +57,87 @@ export async function GET(
       },
     })
 
+    // Map cancer types to their keywords for title searching (used for both totalNews and approvals)
+    const cancerTypeKeywords: Record<string, string[]> = {
+      'breast': ['breast cancer', 'breast'],
+      'lung': ['lung cancer', 'lung'],
+      'colorectal': ['colorectal cancer', 'colorectal'],
+      'prostate': ['prostate cancer', 'prostate'],
+      'pancreatic': ['pancreatic cancer', 'pancreatic'],
+      'liver': ['liver cancer', 'liver', 'hepatocellular'],
+      'stomach': ['stomach cancer', 'stomach', 'gastric'],
+      'esophageal': ['esophageal cancer', 'esophageal'],
+      'bladder': ['bladder cancer', 'bladder'],
+      'kidney': ['kidney cancer', 'kidney', 'renal'],
+      'cervical': ['cervical cancer', 'cervical'],
+      'ovarian': ['ovarian cancer', 'ovarian'],
+      'leukemia': ['leukemia'],
+      'lymphoma': ['lymphoma'],
+      'melanoma': ['melanoma'],
+      'brain': ['brain cancer', 'brain', 'glioma', 'glioblastoma'],
+    }
+
+    // Get keywords for this cancer type
+    const keywords = cancerTypeKeywords[cancerType] || [cancerType]
+
+    // Build OR conditions: check cancerTypes array OR search title for keywords
+    const titleConditions = keywords.map(keyword => ({
+      title: {
+        contains: keyword,
+        mode: 'insensitive' as const,
+      },
+    }))
+
     // Get recent news articles mentioning approvals (simplified - in production would search news content)
     const approvals = await prisma.newsArticle.count({
       where: {
-        cancerTypes: { has: cancerType },
+        OR: [
+          {
+            cancerTypes: { has: cancerType },
+          },
+          ...titleConditions,
+        ],
         tags: { has: 'FDA' },
         publishedAt: {
           gte: getDaysAgo(90),
         },
+      },
+    })
+
+    // Get total counts (all time, not just recent)
+    const totalArticles = await prisma.researchPaper.count({
+      where: {
+        cancerTypes: { has: cancerType },
+        AND: [
+          {
+            abstract: {
+              not: null,
+            },
+          },
+          {
+            abstract: {
+              not: '',
+            },
+          },
+        ],
+      },
+    })
+
+    const totalNews = await prisma.newsArticle.count({
+      where: {
+        OR: [
+          {
+            cancerTypes: { has: cancerType },
+          },
+          ...titleConditions,
+        ],
+      },
+    })
+
+    const totalTrials = await prisma.clinicalTrial.count({
+      where: {
+        conditions: { has: cancerType },
+        status: { in: ['RECRUITING', 'NOT_YET_RECRUITING'] },
       },
     })
 
@@ -83,6 +156,9 @@ export async function GET(
       newTrials,
       approvals,
       recentPapers,
+      totalArticles,
+      totalNews,
+      totalTrials,
       trends,
     })
   } catch (error) {

@@ -20,6 +20,19 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
+  // Check if user has completed profile (skip for admin users)
+  if (session.user?.email && session.user?.role !== 'admin') {
+    const { prisma } = await import('@/lib/db/client')
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { profileCompleted: true },
+    })
+
+    if (!user?.profileCompleted) {
+      redirect('/onboarding')
+    }
+  }
+
   return (
     <SessionProvider session={session}>
       <div className="min-h-screen bg-gray-50">

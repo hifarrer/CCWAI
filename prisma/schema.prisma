@@ -44,9 +44,12 @@ model User {
   email        String?   @unique
   emailVerified DateTime?
   image        String?
+  age          Int?
   cancerType   String?
   zipCode      String?
+  isInUSA      Boolean?  // Whether user is in USA (for zipCode validation)
   preferences  Json      @default("{}")
+  profileCompleted Boolean @default(false) // Track if onboarding is complete
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

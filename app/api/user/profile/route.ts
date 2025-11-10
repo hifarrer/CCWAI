@@ -16,9 +16,12 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         email: true,
+        age: true,
         cancerType: true,
         zipCode: true,
+        isInUSA: true,
         preferences: true,
+        profileCompleted: true,
       },
     })
 
@@ -44,14 +47,17 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { cancerType, zipCode, preferences } = body
+    const { age, cancerType, zipCode, isInUSA, preferences, profileCompleted } = body
 
     const user = await prisma.user.update({
       where: { email: session.user.email },
       data: {
+        age: age !== undefined ? age : undefined,
         cancerType,
         zipCode,
+        isInUSA: isInUSA !== undefined ? isInUSA : undefined,
         preferences: preferences || {},
+        profileCompleted: profileCompleted !== undefined ? profileCompleted : undefined,
       },
     })
 

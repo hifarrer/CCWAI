@@ -9,6 +9,9 @@ interface OverviewData {
   newTrials: number
   approvals: number
   recentPapers: number
+  totalArticles: number
+  totalNews: number
+  totalTrials: number
   trends: {
     label: string
     value: string
@@ -21,17 +24,31 @@ export function CancerTypeOverview() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Get user's cancer type from session or default
-    const cancerType = 'breast' // TODO: Get from user profile
-    if (cancerType) {
-      fetchOverview(cancerType)
+    // Get user's cancer type from profile
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/user/profile')
+        if (response.ok) {
+          const data = await response.json()
+          const cancerType = data.user?.cancerType
+          if (cancerType) {
+            fetchOverview(cancerType)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error)
+      }
+    }
+
+    if (session) {
+      fetchUserProfile()
     }
   }, [session])
 
   const fetchOverview = async (cancerType: string) => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/overview/${cancerType}`)
+      const response = await fetch(`/api/overview/${encodeURIComponent(cancerType)}`)
       const data = await response.json()
       setOverview(data)
     } catch (error) {
@@ -63,9 +80,12 @@ export function CancerTypeOverview() {
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Beaker className="h-4 w-4 text-blue-600" />
-                  <p className="text-xs font-medium text-blue-900">New Trials (14 days)</p>
+                  <p className="text-xs font-medium text-blue-900">Total Trials</p>
                 </div>
-                <p className="text-2xl font-bold text-blue-900">{overview.newTrials}</p>
+                <p className="text-2xl font-bold text-blue-900">{overview.totalTrials}</p>
+                <p className="text-xs text-blue-700 mt-1">
+                  {overview.newTrials} new in last 14 days
+                </p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -73,14 +93,27 @@ export function CancerTypeOverview() {
                   <p className="text-xs font-medium text-green-900">FDA Approvals</p>
                 </div>
                 <p className="text-2xl font-bold text-green-900">{overview.approvals}</p>
+                <p className="text-xs text-green-700 mt-1">Last 90 days</p>
               </div>
             </div>
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-4 w-4 text-purple-600" />
-                <p className="text-xs font-medium text-purple-900">Recent Papers (30 days)</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-purple-600" />
+                  <p className="text-xs font-medium text-purple-900">Total Articles</p>
+                </div>
+                <p className="text-2xl font-bold text-purple-900">{overview.totalArticles}</p>
+                <p className="text-xs text-purple-700 mt-1">
+                  {overview.recentPapers} new in last 30 days
+                </p>
               </div>
-              <p className="text-2xl font-bold text-purple-900">{overview.recentPapers}</p>
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-orange-600" />
+                  <p className="text-xs font-medium text-orange-900">Total News</p>
+                </div>
+                <p className="text-2xl font-bold text-orange-900">{overview.totalNews}</p>
+              </div>
             </div>
             {overview.trends.length > 0 && (
               <div className="space-y-2">
