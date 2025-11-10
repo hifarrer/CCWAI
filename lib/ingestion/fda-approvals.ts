@@ -59,7 +59,7 @@ interface OpenFDAResponse {
  */
 async function fetchFdaApprovalsForCancerType(
   cancerType: CancerType,
-  limit: number = 20
+  limit: number = 100
 ): Promise<OpenFDALabel[]> {
   const searchTerms = CANCER_TYPE_SEARCH_TERMS[cancerType] || [cancerType]
   
@@ -344,8 +344,8 @@ export async function ingestFdaApprovals() {
     try {
       console.log(`Fetching FDA approvals for ${cancerType}...`)
       
-      // Fetch approvals from OpenFDA (limit to 20 per cancer type)
-      const labels = await fetchFdaApprovalsForCancerType(cancerType, 20)
+      // Fetch approvals from OpenFDA (limit to 100 per cancer type)
+      const labels = await fetchFdaApprovalsForCancerType(cancerType, 100)
       
       if (labels.length === 0) {
         console.log(`No FDA approvals found for ${cancerType}`)
