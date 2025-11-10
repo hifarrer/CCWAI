@@ -143,14 +143,21 @@ export function CancerTypeOverview() {
                   {overview.newTrials} new in last 14 days
                 </p>
               </button>
-              <div className="bg-green-50 p-4 rounded-lg">
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams()
+                  if (cancerType) params.set('cancerType', cancerType)
+                  router.push(`/fda-approvals?${params.toString()}`)
+                }}
+                className="bg-green-50 p-4 rounded-lg hover:bg-green-100 transition-colors cursor-pointer text-left w-full"
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <Award className="h-4 w-4 text-green-600" />
                   <p className="text-xs font-medium text-green-900">FDA Approvals</p>
                 </div>
                 <p className="text-2xl font-bold text-green-900">{overview.approvals}</p>
                 <p className="text-xs text-green-700 mt-1">Last 90 days</p>
-              </div>
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <button

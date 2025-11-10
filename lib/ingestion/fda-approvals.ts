@@ -206,17 +206,80 @@ function parseFdaApproval(label: OpenFDALabel, cancerType: CancerType): {
   url: string | null
   metadata: any
 } {
+  // Extract application number from various possible locations
   const applicationNumber = label.application_number?.[0] || 
-                           label.openfda?.application_number?.[0] || 
+                           label.openfda?.application_number?.[0] ||
+                           (label as any).openfda?.application_number?.[0] ||
                            null
   
-  const drugName = label.brand_name?.[0] || 
-                   label.generic_name?.[0] || 
-                   'Unknown Drug'
+  // Extract drug name - try multiple field names and formats
+  let drugName = 'Unknown Drug'
   
-  const genericName = label.generic_name?.[0] || null
+  // Try brand_name (array)
+  if (label.brand_name && Array.isArray(label.brand_name) && label.brand_name.length > 0) {
+    drugName = label.brand_name[0]
+  }
+  // Try brand_name (string)
+  else if ((label as any).brand_name && typeof (label as any).brand_name === 'string') {
+    drugName = (label as any).brand_name
+  }
+  // Try openfda.brand_name
+  else if ((label as any).openfda?.brand_name && Array.isArray((label as any).openfda.brand_name) && (label as any).openfda.brand_name.length > 0) {
+    drugName = (label as any).openfda.brand_name[0]
+  }
+  // Try generic_name as fallback
+  else if (label.generic_name && Array.isArray(label.generic_name) && label.generic_name.length > 0) {
+    drugName = label.generic_name[0]
+  }
+  // Try generic_name as string
+  else if ((label as any).generic_name && typeof (label as any).generic_name === 'string') {
+    drugName = (label as any).generic_name
+  }
+  // Try openfda.generic_name
+  else if ((label as any).openfda?.generic_name && Array.isArray((label as any).openfda.generic_name) && (label as any).openfda.generic_name.length > 0) {
+    drugName = (label as any).openfda.generic_name[0]
+  }
+  // Try product_ndc or spl_product_data_elements
+  else if ((label as any).product_ndc && Array.isArray((label as any).product_ndc) && (label as any).product_ndc.length > 0) {
+    drugName = (label as any).product_ndc[0]
+  }
+  // Last resort: try to extract from spl_product_data_elements
+  else if ((label as any).spl_product_data_elements) {
+    const splData = (label as any).spl_product_data_elements
+    if (Array.isArray(splData) && splData.length > 0 && splData[0].name) {
+      drugName = splData[0].name
+    }
+  }
   
-  const company = label.openfda?.manufacturer_name?.[0] || null
+  // Extract generic name
+  let genericName: string | null = null
+  if (label.generic_name && Array.isArray(label.generic_name) && label.generic_name.length > 0) {
+    genericName = label.generic_name[0]
+  } else if ((label as any).generic_name && typeof (label as any).generic_name === 'string') {
+    genericName = (label as any).generic_name
+  } else if ((label as any).openfda?.generic_name && Array.isArray((label as any).openfda.generic_name) && (label as any).openfda.generic_name.length > 0) {
+    genericName = (label as any).openfda.generic_name[0]
+  }
+  
+  // Extract company/manufacturer
+  let company: string | null = null
+  if (label.openfda?.manufacturer_name && Array.isArray(label.openfda.manufacturer_name) && label.openfda.manufacturer_name.length > 0) {
+    company = label.openfda.manufacturer_name[0]
+  } else if ((label as any).openfda?.manufacturer_name && Array.isArray((label as any).openfda.manufacturer_name) && (label as any).openfda.manufacturer_name.length > 0) {
+    company = (label as any).openfda.manufacturer_name[0]
+  } else if ((label as any).manufacturer_name && Array.isArray((label as any).manufacturer_name) && (label as any).manufacturer_name.length > 0) {
+    company = (label as any).manufacturer_name[0]
+  }
+  
+  // Log if we still have Unknown Drug to help debug
+  if (drugName === 'Unknown Drug') {
+    console.warn('Could not extract drug name from label:', {
+      hasBrandName: !!label.brand_name,
+      hasGenericName: !!label.generic_name,
+      hasOpenFDA: !!label.openfda,
+      labelKeys: Object.keys(label).slice(0, 10), // First 10 keys for debugging
+    })
+  }
   
   // Parse effective_time (approval date) - format is typically YYYYMMDD
   let approvalDate: Date | null = null
@@ -235,9 +298,13 @@ function parseFdaApproval(label: OpenFDALabel, cancerType: CancerType): {
                      null
   
   // Build FDA URL if we have application number
-  const url = applicationNumber 
-    ? `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${applicationNumber}`
-    : null
+  // Remove prefixes like BLA, NDA, ANDA, etc. from application number for the URL
+  let url: string | null = null
+  if (applicationNumber) {
+    // Remove common FDA application type prefixes (BLA, NDA, ANDA, etc.)
+    const cleanAppNumber = applicationNumber.replace(/^(BLA|NDA|ANDA|BL|ND)\s*/i, '')
+    url = `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${cleanAppNumber}`
+  }
   
   // Extract cancer types from the label
   const extractedCancerTypes = extractCancerTypesFromLabel(label)
@@ -304,20 +371,27 @@ export async function ingestFdaApprovals() {
           })
 
           if (existing) {
-            // Update existing record if needed
-            await prisma.fdaApproval.update({
-              where: { applicationNumber: approvalData.applicationNumber },
-              data: {
-                drugName: approvalData.drugName,
-                genericName: approvalData.genericName,
-                company: approvalData.company,
-                approvalDate: approvalData.approvalDate,
-                cancerTypes: approvalData.cancerTypes,
-                indication: approvalData.indication,
-                url: approvalData.url,
-                metadata: approvalData.metadata,
-              },
-            })
+            // Update existing record - especially if drugName was Unknown Drug
+            const needsUpdate = existing.drugName === 'Unknown Drug' || 
+                               existing.drugName !== approvalData.drugName ||
+                               !existing.genericName && approvalData.genericName
+            
+            if (needsUpdate) {
+              await prisma.fdaApproval.update({
+                where: { applicationNumber: approvalData.applicationNumber },
+                data: {
+                  drugName: approvalData.drugName,
+                  genericName: approvalData.genericName || existing.genericName,
+                  company: approvalData.company || existing.company,
+                  approvalDate: approvalData.approvalDate || existing.approvalDate,
+                  cancerTypes: approvalData.cancerTypes,
+                  indication: approvalData.indication || existing.indication,
+                  url: approvalData.url || existing.url,
+                  metadata: approvalData.metadata,
+                },
+              })
+              console.log(`Updated FDA approval: ${approvalData.applicationNumber} - ${approvalData.drugName}`)
+            }
           } else {
             // Create new record
             await prisma.fdaApproval.create({
