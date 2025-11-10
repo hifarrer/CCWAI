@@ -31,10 +31,15 @@ interface OpenFDALabel {
   openfda?: {
     manufacturer_name?: string[]
     application_number?: string[]
+    spl_set_id?: string[]
+    spl_id?: string[]
   }
   effective_time?: string
   indications_and_usage?: string[]
   purpose?: string[]
+  spl_patient_package_insert?: string[]
+  spl_set_id?: string[]
+  spl_id?: string[]
   [key: string]: any
 }
 
@@ -204,6 +209,7 @@ function parseFdaApproval(label: OpenFDALabel, cancerType: CancerType): {
   cancerTypes: string[]
   indication: string | null
   url: string | null
+  labelPdfUrl: string | null
   metadata: any
 } {
   // Extract application number from various possible locations
@@ -306,6 +312,35 @@ function parseFdaApproval(label: OpenFDALabel, cancerType: CancerType): {
     url = `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${cleanAppNumber}`
   }
   
+  // Extract PDF label URL if available
+  let labelPdfUrl: string | null = null
+  
+  // Try spl_patient_package_insert field (direct PDF URL)
+  if (label.spl_patient_package_insert && Array.isArray(label.spl_patient_package_insert) && label.spl_patient_package_insert.length > 0) {
+    labelPdfUrl = label.spl_patient_package_insert[0]
+  }
+  // Try spl_set_id to construct PDF URL
+  else if (label.spl_set_id && Array.isArray(label.spl_set_id) && label.spl_set_id.length > 0) {
+    const splSetId = label.spl_set_id[0]
+    // FDA SPL PDF URL format: https://www.accessdata.fda.gov/spl/data/{spl_set_id}/{spl_set_id}.pdf
+    labelPdfUrl = `https://www.accessdata.fda.gov/spl/data/${splSetId}/${splSetId}.pdf`
+  }
+  // Try openfda.spl_set_id
+  else if (label.openfda?.spl_set_id && Array.isArray(label.openfda.spl_set_id) && label.openfda.spl_set_id.length > 0) {
+    const splSetId = label.openfda.spl_set_id[0]
+    labelPdfUrl = `https://www.accessdata.fda.gov/spl/data/${splSetId}/${splSetId}.pdf`
+  }
+  // Try spl_id to construct PDF URL
+  else if (label.spl_id && Array.isArray(label.spl_id) && label.spl_id.length > 0) {
+    const splId = label.spl_id[0]
+    labelPdfUrl = `https://www.accessdata.fda.gov/spl/data/${splId}/${splId}.pdf`
+  }
+  // Try openfda.spl_id
+  else if (label.openfda?.spl_id && Array.isArray(label.openfda.spl_id) && label.openfda.spl_id.length > 0) {
+    const splId = label.openfda.spl_id[0]
+    labelPdfUrl = `https://www.accessdata.fda.gov/spl/data/${splId}/${splId}.pdf`
+  }
+  
   // Extract cancer types from the label
   const extractedCancerTypes = extractCancerTypesFromLabel(label)
   const cancerTypes = extractedCancerTypes.length > 0 
@@ -321,6 +356,7 @@ function parseFdaApproval(label: OpenFDALabel, cancerType: CancerType): {
     cancerTypes,
     indication,
     url,
+    labelPdfUrl,
     metadata: label,
   }
 }
@@ -387,6 +423,7 @@ export async function ingestFdaApprovals() {
                   cancerTypes: approvalData.cancerTypes,
                   indication: approvalData.indication || existing.indication,
                   url: approvalData.url || existing.url,
+                  labelPdfUrl: approvalData.labelPdfUrl || existing.labelPdfUrl,
                   metadata: approvalData.metadata,
                 },
               })

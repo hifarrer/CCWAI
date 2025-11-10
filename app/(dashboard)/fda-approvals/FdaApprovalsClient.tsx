@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import React, { useState, useTransition, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,172 @@ import {
 import { ExternalLink, ChevronLeft, ChevronRight, Filter, Award } from 'lucide-react'
 import { CancerType } from '@/lib/types'
 import { formatDate } from '@/lib/utils'
+
+/**
+ * Formats indication text to preserve structure and formatting
+ */
+function formatIndicationText(text: string): React.ReactNode {
+  if (!text) return null
+
+  // Split by line breaks and process each line
+  const lines = text.split('\n').filter(l => l.trim())
+  
+  const elements: React.ReactNode[] = []
+  let currentList: string[] = []
+  let currentParagraph: string[] = []
+  
+  const flushList = () => {
+    if (currentList.length > 0) {
+      elements.push(
+        <ul key={`list-${elements.length}`} className="list-disc list-inside space-y-1 ml-6 mb-2">
+          {currentList.map((item, idx) => (
+            <li key={idx} className="text-sm text-muted-foreground">
+              {formatIndicationContent(item)}
+            </li>
+          ))}
+        </ul>
+      )
+      currentList = []
+    }
+  }
+  
+  const flushParagraph = () => {
+    if (currentParagraph.length > 0) {
+      elements.push(
+        <p key={`para-${elements.length}`} className="text-sm text-muted-foreground mb-2">
+          {formatIndicationContent(currentParagraph.join(' '))}
+        </p>
+      )
+      currentParagraph = []
+    }
+  }
+  
+  lines.forEach((line, idx) => {
+    const trimmed = line.trim()
+    
+    // Check if it's a numbered section header (e.g., "1.1", "1.2")
+    const numberedSectionMatch = trimmed.match(/^(\d+\.\d+)\s+(.+)$/)
+    if (numberedSectionMatch) {
+      flushList()
+      flushParagraph()
+      const [, number, content] = numberedSectionMatch
+      const titleMatch = content.match(/^(.+?):\s*(.+)$/)
+      if (titleMatch) {
+        const [, title, rest] = titleMatch
+        elements.push(
+          <div key={`section-${idx}`} className="mb-3">
+            <div className="font-semibold text-sm mb-1 text-gray-900">
+              {number} {title}:
+            </div>
+            {rest && (
+              <div className="ml-4 text-sm text-muted-foreground">
+                {formatIndicationContent(rest)}
+              </div>
+            )}
+          </div>
+        )
+      } else {
+        elements.push(
+          <div key={`section-${idx}`} className="font-semibold text-sm mb-2 text-gray-900">
+            {number} {content}
+          </div>
+        )
+      }
+      return
+    }
+    
+    // Check if it starts with a bullet point
+    if (trimmed.match(/^[\*\-\•]\s+/)) {
+      flushParagraph()
+      const cleanItem = trimmed.replace(/^[\*\-\•]\s+/, '').trim()
+      currentList.push(cleanItem)
+      return
+    }
+    
+    // Check for "Limitations of Use" or similar special sections
+    if (trimmed.match(/^(Limitations of Use|See Clinical Studies)/i)) {
+      flushList()
+      flushParagraph()
+      elements.push(
+        <p key={`special-${idx}`} className="text-sm italic text-muted-foreground mb-2">
+          <strong>{trimmed}</strong>
+        </p>
+      )
+      return
+    }
+    
+    // Regular text line
+    if (trimmed) {
+      flushList()
+      currentParagraph.push(trimmed)
+    } else {
+      // Empty line - flush current paragraph
+      flushParagraph()
+    }
+  })
+  
+  // Flush any remaining content
+  flushList()
+  flushParagraph()
+  
+  return <div className="space-y-2">{elements}</div>
+}
+
+/**
+ * Formats content within a paragraph/section, handling bold text and line breaks
+ */
+function formatIndicationContent(content: string): React.ReactNode {
+  // Split by single line breaks but preserve them
+  const lines = content.split('\n').filter(l => l.trim())
+  
+  return (
+    <>
+      {lines.map((line, lineIdx) => {
+        // Check for bold text patterns (text between asterisks or cancer type names)
+        const parts: React.ReactNode[] = []
+        let lastIndex = 0
+        
+        // Pattern for bold text: text between ** or cancer type names
+        const boldPattern = /\*\*([^*]+)\*\*|(\b(?:Metastatic|Recurrent|Persistent|Unresectable|Locally advanced|Epithelial|Primary|Hepatocellular|Glioblastoma|Non-small cell|Non-squamous)\s+[A-Za-z\s]+(?:cancer|Carcinoma|Carcinoma|GBM|NSCLC|HCC)?\b)/gi
+        let match
+        
+        while ((match = boldPattern.exec(line)) !== null) {
+          // Add text before match
+          if (match.index > lastIndex) {
+            parts.push(line.substring(lastIndex, match.index))
+          }
+          
+          // Add bold text
+          const boldText = match[1] || match[2]
+          parts.push(
+            <strong key={`bold-${lineIdx}-${match.index}`} className="font-semibold">
+              {boldText}
+            </strong>
+          )
+          
+          lastIndex = match.index + match[0].length
+        }
+        
+        // Add remaining text
+        if (lastIndex < line.length) {
+          parts.push(line.substring(lastIndex))
+        }
+        
+        // If no matches, just return the line
+        if (parts.length === 0) {
+          parts.push(line)
+        }
+        
+        return (
+          <span key={lineIdx}>
+            {parts}
+            {lineIdx < lines.length - 1 && <br />}
+          </span>
+        )
+      })}
+    </>
+  )
+}
 
 const CANCER_TYPES: { value: CancerType; label: string }[] = [
   { value: 'breast', label: 'Breast Cancer' },
@@ -65,6 +231,7 @@ interface FdaApproval {
   cancerTypes: string[]
   indication: string | null
   url: string | null
+  labelPdfUrl: string | null
 }
 
 interface FdaApprovalsClientProps {
@@ -255,8 +422,10 @@ export function FdaApprovalsClient({
 
                     {approval.indication && (
                       <div>
-                        <p className="text-sm font-medium mb-1">Indication:</p>
-                        <p className="text-sm text-muted-foreground">{approval.indication}</p>
+                        <p className="text-sm font-medium mb-2">Indication:</p>
+                        <div className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-md border border-gray-200 max-h-96 overflow-y-auto">
+                          {formatIndicationText(approval.indication)}
+                        </div>
                       </div>
                     )}
 
@@ -273,17 +442,30 @@ export function FdaApprovalsClient({
                       </div>
                     )}
 
-                    {approval.url && (
-                      <a
-                        href={approval.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        View on FDA website
-                      </a>
-                    )}
+                    <div className="flex gap-3">
+                      {approval.url && (
+                        <a
+                          href={approval.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          View on FDA website
+                        </a>
+                      )}
+                      {approval.labelPdfUrl && (
+                        <a
+                          href={approval.labelPdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Label (PDF)
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

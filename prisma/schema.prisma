@@ -130,6 +130,7 @@ model FdaApproval {
   cancerTypes     String[]  // Associated cancer types
   indication      String?   @db.Text // What the drug is approved for
   url             String?   @db.Text // Link to FDA approval page
+  labelPdfUrl     String?   @db.Text // Link to FDA label PDF
   metadata        Json?     @default("{}") // Store full API response
   ingestedAt      DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
