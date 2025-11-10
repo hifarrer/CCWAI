@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db/client'
 import { getDaysAgo } from '@/lib/utils'
+import { CancerType, TreatmentType } from '@/lib/types'
 import { ArticlesClient } from './ArticlesClient'
 
 interface PageProps {
@@ -84,6 +85,28 @@ export default async function ArticlesPage({ searchParams }: PageProps) {
 
   const totalPages = Math.ceil(total / limit)
 
+  // Validate cancerType and treatmentType are valid types
+  const validCancerTypes: CancerType[] = [
+    'breast', 'lung', 'colorectal', 'prostate', 'pancreatic',
+    'liver', 'stomach', 'esophageal', 'bladder', 'kidney',
+    'cervical', 'ovarian', 'leukemia', 'lymphoma', 'melanoma',
+    'brain', 'other',
+  ]
+  const validTreatmentTypes: TreatmentType[] = [
+    'chemotherapy', 'immunotherapy', 'radiation', 'surgery',
+    'targeted-therapy', 'hormone-therapy', 'stem-cell-transplant', 'other',
+  ]
+
+  const cancerType: CancerType | undefined = searchParams.cancerType && 
+    validCancerTypes.includes(searchParams.cancerType as CancerType)
+    ? (searchParams.cancerType as CancerType)
+    : undefined
+
+  const treatmentType: TreatmentType | undefined = searchParams.treatmentType && 
+    validTreatmentTypes.includes(searchParams.treatmentType as TreatmentType)
+    ? (searchParams.treatmentType as TreatmentType)
+    : undefined
+
   return (
     <ArticlesClient
       initialPapers={papers}
@@ -91,8 +114,8 @@ export default async function ArticlesPage({ searchParams }: PageProps) {
       initialPage={page}
       initialTotalPages={totalPages}
       initialFilters={{
-        cancerType: searchParams.cancerType,
-        treatmentType: searchParams.treatmentType,
+        cancerType,
+        treatmentType,
         days: searchParams.days ? parseInt(searchParams.days) : undefined,
       }}
     />
