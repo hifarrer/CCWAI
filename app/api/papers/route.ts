@@ -14,14 +14,12 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const cancerType = searchParams.get('cancerType')
     const treatmentType = searchParams.get('treatmentType')
-    const days = parseInt(searchParams.get('days') || '30')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const daysParam = searchParams.get('days')
+    const days = daysParam ? parseInt(daysParam) : null
+    const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const where: any = {
-      publicationDate: {
-        gte: getDaysAgo(days),
-      },
       AND: [
         {
           abstract: {
@@ -44,6 +42,13 @@ export async function GET(request: NextRequest) {
       ],
     }
 
+    // Only filter by date if days parameter is provided
+    if (days !== null) {
+      where.publicationDate = {
+        gte: getDaysAgo(days),
+      }
+    }
+
     if (cancerType) {
       where.cancerTypes = {
         has: cancerType,
@@ -56,6 +61,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get total count for pagination
+    const total = await prisma.researchPaper.count({ where })
+
     const papers = await prisma.researchPaper.findMany({
       where,
       take: limit,
@@ -65,7 +73,13 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ papers })
+    return NextResponse.json({
+      papers,
+      total,
+      page: Math.floor(offset / limit) + 1,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    })
   } catch (error) {
     console.error('Error fetching papers:', error)
     return NextResponse.json(

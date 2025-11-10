@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    // Get total count for pagination
+    const total = await prisma.newsArticle.count({ where })
+
     const articles = await prisma.newsArticle.findMany({
       where,
       take: limit,
@@ -56,7 +59,13 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ articles })
+    return NextResponse.json({
+      articles,
+      total,
+      page: Math.floor(offset / limit) + 1,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    })
   } catch (error) {
     console.error('Error fetching news:', error)
     return NextResponse.json(

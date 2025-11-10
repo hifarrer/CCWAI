@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { TrialMatchCriteria } from '@/lib/types'
+import { prisma } from '@/lib/db/client'
 
 // Map cancer types to search terms for ClinicalTrials.gov
 const cancerTypeMap: Record<string, string> = {
@@ -65,9 +66,11 @@ interface ClinicalTrialsApiResponse {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const userId = session.user.id
 
     const criteria: TrialMatchCriteria = await request.json()
 
@@ -245,6 +248,27 @@ export async function POST(request: NextRequest) {
       count: trials.length,
       trialIds: trials.map(t => t.nctId)
     })
+
+    // Save trials to UserTrialMatch table in the background (don't await - let it run async)
+    if (trials.length > 0) {
+      const nctIds = trials.map(t => t.nctId).filter((id): id is string => id !== 'unknown' && Boolean(id))
+      
+      // Save matches in background (don't block the response)
+      prisma.userTrialMatch.createMany({
+        data: nctIds.map(nctId => ({
+          userId,
+          nctId,
+        })),
+        skipDuplicates: true, // Skip if already exists
+      }).then(() => {
+        // Dispatch event to notify that trials were updated
+        // This will be handled by the client-side code
+        console.log('[ClinicalTrials] Trial matches saved successfully')
+      }).catch((error) => {
+        console.error('[ClinicalTrials] Error saving trial matches:', error)
+        // Don't fail the request if saving fails
+      })
+    }
 
     return NextResponse.json({ trials })
   } catch (error) {

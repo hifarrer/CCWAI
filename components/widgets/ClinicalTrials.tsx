@@ -53,6 +53,12 @@ export function ClinicalTrials() {
       
       if (data.trials && data.trials.length === 0) {
         setError('No trials found matching your criteria. Try adjusting your search parameters.')
+      } else if (data.trials && data.trials.length > 0) {
+        // Dispatch event to notify that trials were updated
+        // Wait a moment for the server-side save to complete
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('trialsUpdated'))
+        }, 2000) // 2 second delay to allow server-side save to complete
       }
     } catch (error) {
       console.error('Error matching trials:', error)

@@ -10,11 +10,12 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const cancerType = decodeURIComponent(params.cancerType)
+    const userId = session.user.id
 
     // Get new trials in last 14 days
     const newTrials = await prisma.clinicalTrial.count({
@@ -88,17 +89,11 @@ export async function GET(
       },
     }))
 
-    // Get recent news articles mentioning approvals (simplified - in production would search news content)
-    const approvals = await prisma.newsArticle.count({
+    // Get FDA approvals for this cancer type (last 90 days)
+    const approvals = await prisma.fdaApproval.count({
       where: {
-        OR: [
-          {
-            cancerTypes: { has: cancerType },
-          },
-          ...titleConditions,
-        ],
-        tags: { has: 'FDA' },
-        publishedAt: {
+        cancerTypes: { has: cancerType },
+        approvalDate: {
           gte: getDaysAgo(90),
         },
       },
@@ -134,12 +129,27 @@ export async function GET(
       },
     })
 
-    const totalTrials = await prisma.clinicalTrial.count({
-      where: {
-        conditions: { has: cancerType },
-        status: { in: ['RECRUITING', 'NOT_YET_RECRUITING'] },
-      },
+    // Get user's matched trials count (preferred) or fall back to general count
+    const userMatches = await prisma.userTrialMatch.findMany({
+      where: { userId },
+      select: { nctId: true },
     })
+
+    let totalTrials: number
+    if (userMatches.length > 0) {
+      // Count all user's matched trials
+      // These trials were already searched with the user's cancer type and criteria,
+      // so we count them directly without requiring them to be in ClinicalTrial table
+      totalTrials = userMatches.length
+    } else {
+      // Fall back to general count if user has no matches
+      totalTrials = await prisma.clinicalTrial.count({
+        where: {
+          conditions: { has: cancerType },
+          status: { in: ['RECRUITING', 'NOT_YET_RECRUITING', 'ENROLLING_BY_INVITATION'] },
+        },
+      })
+    }
 
     const trends = [
       {

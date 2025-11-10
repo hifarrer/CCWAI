@@ -57,6 +57,7 @@ model User {
   sessions         Session[]
   dailyCheckins    DailyCheckIn[]
   aiChatSessions   AiChatSession[]
+  trialMatches     UserTrialMatch[]
 }
 
 model VerificationToken {
@@ -117,6 +118,24 @@ model NewsArticle {
   tags        String[]
   summary     String?   @db.Text
   ingestedAt  DateTime  @default(now())
+}
+
+model FdaApproval {
+  id              String    @id @default(cuid())
+  applicationNumber String?  @unique // FDA application number (e.g., NDA, BLA)
+  drugName        String    @db.Text
+  genericName     String?   @db.Text
+  company         String?   // Manufacturer/company name
+  approvalDate    DateTime?
+  cancerTypes     String[]  // Associated cancer types
+  indication      String?   @db.Text // What the drug is approved for
+  url             String?   @db.Text // Link to FDA approval page
+  metadata        Json?     @default("{}") // Store full API response
+  ingestedAt      DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([approvalDate])
+  @@index([cancerTypes])
 }
 
 model RssFeed {
@@ -209,5 +228,17 @@ model DataIngestionLog {
   action      String   // 'created', 'updated', 'skipped'
   metadata    Json?    @default("{}")
   ingestedAt  DateTime @default(now())
+}
+
+model UserTrialMatch {
+  id        String   @id @default(cuid())
+  userId    String
+  nctId     String   // Reference to ClinicalTrial.nctId
+  matchedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, nctId])
+  @@index([userId])
+  @@index([nctId])
 }
 
