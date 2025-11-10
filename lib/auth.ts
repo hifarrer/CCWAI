@@ -7,8 +7,6 @@ import { prisma } from './db/client'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
-  // Explicitly set the base URL to ensure correct callback URLs
-  url: process.env.NEXTAUTH_URL,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
