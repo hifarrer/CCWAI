@@ -90,14 +90,24 @@ export function ArticlesClient({
 
   // Update state when searchParams change (from server component re-render)
   useEffect(() => {
-    const cancerType = searchParams.get('cancerType')
-    const treatmentType = searchParams.get('treatmentType')
+    const cancerTypeParam = searchParams.get('cancerType')
+    const treatmentTypeParam = searchParams.get('treatmentType')
     const days = searchParams.get('days')
     const page = parseInt(searchParams.get('page') || '1')
 
+    // Validate cancerType is a valid CancerType
+    const validCancerType = cancerTypeParam && CANCER_TYPES.some(t => t.value === cancerTypeParam)
+      ? (cancerTypeParam as CancerType)
+      : undefined
+
+    // Validate treatmentType is a valid TreatmentType
+    const validTreatmentType = treatmentTypeParam && TREATMENT_TYPES.some(t => t.value === treatmentTypeParam)
+      ? (treatmentTypeParam as TreatmentType)
+      : undefined
+
     setFilters({
-      cancerType: cancerType || undefined,
-      treatmentType: treatmentType || undefined,
+      cancerType: validCancerType,
+      treatmentType: validTreatmentType,
       days: days ? parseInt(days) : undefined,
     })
     setCurrentPage(page)
