@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 
 const CANCER_TYPES = [
@@ -276,6 +277,7 @@ export default function ProfilePage() {
           </div>
         </main>
       </div>
+      <Footer />
     </SessionProvider>
   )
 }

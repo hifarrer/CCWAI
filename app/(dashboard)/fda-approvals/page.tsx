@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db/client'
 import { getDaysAgo } from '@/lib/utils'
 import { CancerType } from '@/lib/types'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { FdaApprovalsClient } from './FdaApprovalsClient'
 
 interface PageProps {
@@ -68,15 +70,21 @@ export default async function FdaApprovalsPage({ searchParams }: PageProps) {
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <FdaApprovalsClient
-      initialApprovals={approvals}
-      initialTotal={total}
-      initialPage={page}
-      initialTotalPages={totalPages}
-      initialFilters={{
-        cancerType,
-      }}
-    />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <FdaApprovalsClient
+          initialApprovals={approvals}
+          initialTotal={total}
+          initialPage={page}
+          initialTotalPages={totalPages}
+          initialFilters={{
+            cancerType,
+          }}
+        />
+      </main>
+      <Footer />
+    </div>
   )
 }
 

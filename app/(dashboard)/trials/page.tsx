@@ -2,6 +2,8 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db/client'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { TrialsClient } from './TrialsClient'
 
 interface PageProps {
@@ -173,16 +175,22 @@ export default async function TrialsPage({ searchParams }: PageProps) {
   }
 
   return (
-    <TrialsClient
-      initialTrials={initialTrials}
-      initialTotal={initialTotal}
-      initialPage={page}
-      initialTotalPages={initialTotalPages}
-      initialFilters={{
-        cancerType: searchParams.cancerType,
-        status: searchParams.status,
-      }}
-    />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <TrialsClient
+          initialTrials={initialTrials}
+          initialTotal={initialTotal}
+          initialPage={page}
+          initialTotalPages={initialTotalPages}
+          initialFilters={{
+            cancerType: searchParams.cancerType,
+            status: searchParams.status,
+          }}
+        />
+      </main>
+      <Footer />
+    </div>
   )
 }
 

@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { CancerTypeBarChart, CancerTypePieChart } from '@/components/admin/CancerTypeChart'
 import {
   Select,
@@ -24,6 +26,12 @@ interface UsageStats {
   newUsersLast30Days: number
   totalPapers: number
   cancerTypeStats: Array<{
+    cancerType: string
+    count: number
+    percentage: number
+  }>
+  totalFdaApprovals?: number
+  fdaCancerTypeStats?: Array<{
     cancerType: string
     count: number
     percentage: number
@@ -427,8 +435,10 @@ export default function AdminPage() {
 
   if (status === 'unauthenticated' || session?.user?.role !== 'admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl">Admin Login</CardTitle>
             <CardDescription>Enter your admin credentials</CardDescription>
@@ -461,12 +471,16 @@ export default function AdminPage() {
             </form>
           </CardContent>
         </Card>
+        </div>
+        <Footer />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <div className="flex-1 p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
@@ -476,7 +490,7 @@ export default function AdminPage() {
         </div>
 
         {/* Usage Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Total Users</CardTitle>
@@ -518,6 +532,15 @@ export default function AdminPage() {
               <p className="text-sm text-muted-foreground mt-1">Research Papers</p>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">FDA Approvals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{stats?.totalFdaApprovals || 0}</p>
+              <p className="text-sm text-muted-foreground mt-1">Drug Approvals</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Research Papers by Cancer Type */}
@@ -548,6 +571,40 @@ export default function AdminPage() {
                 <CancerTypePieChart
                   data={stats.cancerTypeStats}
                   total={stats.totalPapers}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* FDA Approvals by Cancer Type */}
+        {stats && stats.fdaCancerTypeStats && stats.fdaCancerTypeStats.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>FDA Approvals by Cancer Type</CardTitle>
+                <CardDescription>
+                  Distribution of FDA drug approvals by cancer type
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CancerTypeBarChart
+                  data={stats.fdaCancerTypeStats}
+                  total={stats.totalFdaApprovals || 0}
+                />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>FDA Approvals Distribution</CardTitle>
+                <CardDescription>
+                  Percentage breakdown of FDA approvals by cancer type
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CancerTypePieChart
+                  data={stats.fdaCancerTypeStats}
+                  total={stats.totalFdaApprovals || 0}
                 />
               </CardContent>
             </Card>
@@ -1444,6 +1501,8 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
+      </div>
+      <Footer />
     </div>
   )
 }

@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db/client'
 import { getDaysAgo } from '@/lib/utils'
 import { CancerType, TreatmentType } from '@/lib/types'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { ArticlesClient } from './ArticlesClient'
 
 interface PageProps {
@@ -108,16 +110,22 @@ export default async function ArticlesPage({ searchParams }: PageProps) {
     : undefined
 
   return (
-    <ArticlesClient
-      initialPapers={papers}
-      initialTotal={total}
-      initialPage={page}
-      initialTotalPages={totalPages}
-      initialFilters={{
-        cancerType,
-        treatmentType,
-        days: searchParams.days ? parseInt(searchParams.days) : undefined,
-      }}
-    />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <ArticlesClient
+          initialPapers={papers}
+          initialTotal={total}
+          initialPage={page}
+          initialTotalPages={totalPages}
+          initialFilters={{
+            cancerType,
+            treatmentType,
+            days: searchParams.days ? parseInt(searchParams.days) : undefined,
+          }}
+        />
+      </main>
+      <Footer />
+    </div>
   )
 }

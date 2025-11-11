@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -19,8 +21,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <div className="flex-1 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Welcome to Cure Cancer With Ai</CardTitle>
           <CardDescription>
@@ -89,6 +93,8 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
+      </div>
+      <Footer />
     </div>
   )
 }

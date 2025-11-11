@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import {
   Select,
   SelectContent,
@@ -136,8 +138,10 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-2xl">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <div className="flex-1 flex items-center justify-center px-4">
+        <Card className="w-full max-w-2xl">
         <CardHeader>
           <CardTitle className="text-2xl">Complete Your Profile</CardTitle>
           <CardDescription>
@@ -248,6 +252,8 @@ export default function OnboardingPage() {
           </form>
         </CardContent>
       </Card>
+      </div>
+      <Footer />
     </div>
   )
 }

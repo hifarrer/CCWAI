@@ -2,6 +2,8 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db/client'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { NewsClient } from './NewsClient'
 
 interface PageProps {
@@ -113,18 +115,24 @@ export default async function NewsPage({ searchParams }: PageProps) {
   }
 
   return (
-    <NewsClient
-      initialArticles={showFallbackMessage ? fallbackArticles : articles}
-      initialTotal={showFallbackMessage ? fallbackTotal : total}
-      initialPage={page}
-      initialTotalPages={showFallbackMessage ? fallbackTotalPages : totalPages}
-      initialFilters={{
-        cancerType: searchParams.cancerType,
-        search: searchParams.search,
-      }}
-      showFallbackMessage={showFallbackMessage}
-      userCancerType={searchParams.cancerType}
-    />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <NewsClient
+          initialArticles={showFallbackMessage ? fallbackArticles : articles}
+          initialTotal={showFallbackMessage ? fallbackTotal : total}
+          initialPage={page}
+          initialTotalPages={showFallbackMessage ? fallbackTotalPages : totalPages}
+          initialFilters={{
+            cancerType: searchParams.cancerType,
+            search: searchParams.search,
+          }}
+          showFallbackMessage={showFallbackMessage}
+          userCancerType={searchParams.cancerType}
+        />
+      </main>
+      <Footer />
+    </div>
   )
 }
 

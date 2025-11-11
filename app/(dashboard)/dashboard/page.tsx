@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { ClinicalTrials } from '@/components/widgets/ClinicalTrials'
 import { LatestNews } from '@/components/widgets/LatestNews'
@@ -45,18 +46,19 @@ export default async function DashboardPage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <CancerTypeOverview />
             <NCBIQuery />
             <ClinicalTrials />
             <LatestNews />
             <AskTheAI />
             <AlternativeMedicine />
             <TreatmentLibrary />
-            <CancerTypeOverview />
             <EmotionalSupport />
             <DailyCheckIn />
           </div>
         </main>
       </div>
+      <Footer />
     </SessionProvider>
   )
 }

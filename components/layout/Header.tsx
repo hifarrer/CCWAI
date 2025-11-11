@@ -2,6 +2,7 @@
 
 import { signOut, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,18 +22,24 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-primary">Cure Cancer With Ai</h1>
+          <Link href="/" className="flex items-center">
+            <img
+              src="https://res.cloudinary.com/dqemas8ht/image/upload/v1762823833/CCWAI_1_stoio5.png"
+              alt="Cure Cancer With Ai"
+              className="h-14 w-auto object-contain"
+            />
+          </Link>
         </div>
         <div className="flex items-center gap-4">
           {session?.user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full overflow-hidden p-0">
                   {session.user.image ? (
                     <img
                       src={session.user.image}
                       alt={session.user.name || 'User'}
-                      className="h-10 w-10 rounded-full"
+                      className="h-full w-full rounded-full object-cover"
                     />
                   ) : (
                     <User className="h-5 w-5" />

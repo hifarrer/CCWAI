@@ -95,6 +95,41 @@ export async function GET(request: NextRequest) {
       }))
       .sort((a, b) => b.count - a.count) // Sort by count descending
 
+    // Get FDA approvals statistics
+    const totalFdaApprovals = await prisma.fdaApproval.count()
+
+    // Get FDA approvals grouped by cancer type
+    const allFdaApprovals = await prisma.fdaApproval.findMany({
+      select: {
+        cancerTypes: true,
+      },
+    })
+
+    // Count FDA approvals by cancer type (approvals can have multiple cancer types)
+    const fdaCancerTypeCounts: Record<string, number> = {}
+    allFdaApprovals.forEach((approval) => {
+      if (approval.cancerTypes && approval.cancerTypes.length > 0) {
+        approval.cancerTypes.forEach((cancerType) => {
+          fdaCancerTypeCounts[cancerType] = (fdaCancerTypeCounts[cancerType] || 0) + 1
+        })
+      } else {
+        // Approvals with no cancer type
+        fdaCancerTypeCounts['other'] = (fdaCancerTypeCounts['other'] || 0) + 1
+      }
+    })
+
+    // Calculate total occurrences for FDA approvals
+    const totalFdaOccurrences = Object.values(fdaCancerTypeCounts).reduce((sum, count) => sum + count, 0)
+
+    // Convert to array format for easier frontend consumption
+    const fdaCancerTypeStats = Object.entries(fdaCancerTypeCounts)
+      .map(([cancerType, count]) => ({
+        cancerType,
+        count,
+        percentage: totalFdaOccurrences > 0 ? Math.round((count / totalFdaOccurrences) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count) // Sort by count descending
+
     return NextResponse.json({
       totalUsers,
       totalCheckIns,
@@ -103,6 +138,8 @@ export async function GET(request: NextRequest) {
       newUsersLast30Days,
       totalPapers,
       cancerTypeStats,
+      totalFdaApprovals,
+      fdaCancerTypeStats,
     })
   } catch (error) {
     console.error('Error fetching admin stats:', error)
