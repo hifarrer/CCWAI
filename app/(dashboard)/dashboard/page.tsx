@@ -10,6 +10,7 @@ import { AskTheAI } from '@/components/widgets/AskTheAI'
 import { AlternativeMedicine } from '@/components/widgets/AlternativeMedicine'
 import { TreatmentLibrary } from '@/components/widgets/TreatmentLibrary'
 import { CancerTypeOverview } from '@/components/widgets/CancerTypeOverview'
+import { ArticlesByCancerType } from '@/components/widgets/ArticlesByCancerType'
 import { EmotionalSupport } from '@/components/widgets/EmotionalSupport'
 import { DailyCheckIn } from '@/components/widgets/DailyCheckIn'
 import { NCBIQuery } from '@/components/widgets/NCBIQuery'
@@ -47,6 +48,7 @@ export default async function DashboardPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <CancerTypeOverview />
+            <ArticlesByCancerType />
             <NCBIQuery />
             <ClinicalTrials />
             <LatestNews />
