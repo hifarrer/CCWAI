@@ -59,8 +59,10 @@ export async function GET(request: NextRequest) {
       doc.text('Symptoms:', 20, y)
       y += 7
 
+      const emojis: Record<number, string> = { 1: '😢', 2: '😟', 3: '😐', 4: '😊', 5: '😄' }
       Object.entries(checkIn.symptoms as Record<string, number>).forEach(([name, value]) => {
-        doc.text(`  ${name}: ${value}/10`, 20, y)
+        const emoji = emojis[value as number] || '😐'
+        doc.text(`  ${name}: ${emoji} (${value}/5)`, 20, y)
         y += 7
       })
 

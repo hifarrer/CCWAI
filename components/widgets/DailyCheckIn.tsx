@@ -62,7 +62,8 @@ export function DailyCheckIn() {
 
     recent.forEach(checkIn => {
       Object.entries(checkIn.symptoms).forEach(([name, value]) => {
-        if (value >= 7) {
+        // Alert if rating is 1 or 2 (sad emojis) for 4 days
+        if (value <= 2) {
           highSymptoms[name] = (highSymptoms[name] || 0) + 1
         }
       })
@@ -74,7 +75,7 @@ export function DailyCheckIn() {
 
     if (alertSymptoms.length > 0) {
       setAlert(
-        `Your ${alertSymptoms.join(', ')} has been high for 4 days in a row. ` +
+        `Your ${alertSymptoms.join(', ')} has been concerning for 4 days in a row. ` +
         `Consider discussing this with your oncology nurse.`
       )
     }
@@ -152,25 +153,39 @@ export function DailyCheckIn() {
           </div>
 
           <div>
-            <Label>Symptoms (Rate 1-10)</Label>
-            <div className="space-y-2 mt-2">
+            <Label>Symptoms (Rate 1-5)</Label>
+            <div className="space-y-3 mt-2">
               {commonSymptoms.map((symptom) => (
-                <div key={symptom} className="flex items-center justify-between">
+                <div key={symptom} className="space-y-1">
                   <Label htmlFor={symptom} className="text-xs capitalize">
                     {symptom}
                   </Label>
-                  <Input
-                    id={symptom}
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={symptoms[symptom] || ''}
-                    onChange={(e) => setSymptoms({
-                      ...symptoms,
-                      [symptom]: parseInt(e.target.value) || 0,
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((rating) => {
+                      const emojis = ['😢', '😟', '😐', '😊', '😄']
+                      const colors = ['text-red-500', 'text-yellow-500', 'text-gray-500', 'text-yellow-500', 'text-green-500']
+                      const isSelected = symptoms[symptom] === rating
+                      
+                      return (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setSymptoms({
+                            ...symptoms,
+                            [symptom]: rating,
+                          })}
+                          className={`text-2xl transition-all ${
+                            isSelected 
+                              ? `scale-125 ${colors[rating - 1]}` 
+                              : 'opacity-50 hover:opacity-75 hover:scale-110'
+                          }`}
+                          title={`Rate ${rating}`}
+                        >
+                          {emojis[rating - 1]}
+                        </button>
+                      )
                     })}
-                    className="w-20"
-                  />
+                  </div>
                 </div>
               ))}
             </div>
@@ -214,11 +229,15 @@ export function DailyCheckIn() {
                     <p className="text-muted-foreground mb-1">{checkIn.notes}</p>
                   )}
                   <div className="flex gap-2 flex-wrap">
-                    {Object.entries(checkIn.symptoms).map(([name, value]) => (
-                      <span key={name} className="text-xs">
-                        {name}: {value}/10
-                      </span>
-                    ))}
+                    {Object.entries(checkIn.symptoms).map(([name, value]) => {
+                      const emojis = ['😢', '😟', '😐', '😊', '😄']
+                      const emoji = emojis[(value as number) - 1] || '😐'
+                      return (
+                        <span key={name} className="text-xs flex items-center gap-1">
+                          {name}: <span className="text-lg">{emoji}</span> ({value}/5)
+                        </span>
+                      )
+                    })}
                   </div>
                 </div>
               ))}

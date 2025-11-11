@@ -7,12 +7,12 @@ import { SessionProvider } from '@/components/providers/SessionProvider'
 import { ClinicalTrials } from '@/components/widgets/ClinicalTrials'
 import { LatestNews } from '@/components/widgets/LatestNews'
 import { AskTheAI } from '@/components/widgets/AskTheAI'
-import { AlternativeMedicine } from '@/components/widgets/AlternativeMedicine'
-import { TreatmentLibrary } from '@/components/widgets/TreatmentLibrary'
 import { CancerTypeOverview } from '@/components/widgets/CancerTypeOverview'
 import { ArticlesByCancerType } from '@/components/widgets/ArticlesByCancerType'
 import { EmotionalSupport } from '@/components/widgets/EmotionalSupport'
 import { DailyCheckIn } from '@/components/widgets/DailyCheckIn'
+import { SymptomsChart } from '@/components/widgets/SymptomsChart'
+import { OverallWellness } from '@/components/widgets/OverallWellness'
 import { NCBIQuery } from '@/components/widgets/NCBIQuery'
 
 export default async function DashboardPage() {
@@ -53,10 +53,10 @@ export default async function DashboardPage() {
             <ClinicalTrials />
             <LatestNews />
             <AskTheAI />
-            <AlternativeMedicine />
-            <TreatmentLibrary />
             <EmotionalSupport />
             <DailyCheckIn />
+            <SymptomsChart />
+            <OverallWellness />
           </div>
         </main>
       </div>

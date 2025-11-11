@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { TrialMatchCriteria } from '@/lib/types'
 import { prisma } from '@/lib/db/client'
+import { searchICTRPTrials, transformICTRPTrial } from '@/lib/trials/ictrp-api'
 
 // Map cancer types to search terms for ClinicalTrials.gov
 const cancerTypeMap: Record<string, string> = {
@@ -74,8 +75,55 @@ export async function POST(request: NextRequest) {
 
     const criteria: TrialMatchCriteria = await request.json()
 
+    // Get user's location preference to determine which API to use
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isInUSA: true },
+    })
+
+    const isInUSA = user?.isInUSA ?? true // Default to USA if not set
+
     // Log input criteria
     console.log('[ClinicalTrials] Search criteria:', JSON.stringify(criteria, null, 2))
+    console.log('[ClinicalTrials] User isInUSA:', isInUSA)
+
+    // If user is NOT in USA, use ICTRP API for international trials
+    if (isInUSA === false) {
+      console.log('[ICTRP] Using ICTRP API for international user')
+      try {
+        const ictrpTrials = await searchICTRPTrials(criteria)
+        const transformedTrials = ictrpTrials.map(transformICTRPTrial)
+
+        console.log('[ICTRP] Found', transformedTrials.length, 'trials')
+
+        // Save trials to UserTrialMatch table in the background
+        if (transformedTrials.length > 0) {
+          const trialIds = transformedTrials
+            .map(t => t.nctId || t.id)
+            .filter((id): id is string => id !== 'unknown' && Boolean(id))
+          
+          prisma.userTrialMatch.createMany({
+            data: trialIds.map(trialId => ({
+              userId,
+              nctId: trialId,
+            })),
+            skipDuplicates: true,
+          }).then(() => {
+            console.log('[ICTRP] Trial matches saved successfully')
+          }).catch((error) => {
+            console.error('[ICTRP] Error saving trial matches:', error)
+          })
+        }
+
+        return NextResponse.json({ trials: transformedTrials })
+      } catch (ictrpError) {
+        console.error('[ICTRP] Error searching ICTRP:', ictrpError)
+        // Fallback to ClinicalTrials.gov if ICTRP fails
+        console.log('[ClinicalTrials] Falling back to ClinicalTrials.gov API')
+      }
+    }
+
+    // Use ClinicalTrials.gov API for USA users or as fallback
 
     // Build query string for ClinicalTrials.gov API
     const queryParts: string[] = []

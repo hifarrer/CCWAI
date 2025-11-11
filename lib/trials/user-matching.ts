@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/client'
 import { TrialMatchCriteria } from '@/lib/types'
+import { searchICTRPTrials, transformICTRPTrial } from '@/lib/trials/ictrp-api'
 
 // Map cancer types to search terms for ClinicalTrials.gov
 const cancerTypeMap: Record<string, string> = {
@@ -71,6 +72,69 @@ export async function searchAndSaveTrialsForUser(
   try {
     console.log(`[UserTrialMatch] Starting trial search for user ${userId}`, criteria)
 
+    // Get user's location preference to determine which API to use
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isInUSA: true },
+    })
+
+    const isInUSA = user?.isInUSA ?? true // Default to USA if not set
+
+    console.log(`[UserTrialMatch] User isInUSA: ${isInUSA}`)
+
+    // If user is NOT in USA, use ICTRP API for international trials
+    if (isInUSA === false) {
+      console.log(`[UserTrialMatch] Using ICTRP API for international user ${userId}`)
+      try {
+        const ictrpTrials = await searchICTRPTrials(criteria)
+        const transformedTrials = ictrpTrials.map(transformICTRPTrial)
+
+        console.log(`[UserTrialMatch] Found ${transformedTrials.length} trials from ICTRP`)
+
+        // Extract trial IDs
+        const trialIds = transformedTrials
+          .map(t => t.nctId || t.id)
+          .filter((id): id is string => id !== 'unknown' && Boolean(id))
+
+        if (trialIds.length === 0) {
+          console.log(`[UserTrialMatch] No valid trials found for user ${userId}`)
+          return { success: true, count: 0 }
+        }
+
+        // Delete existing matches for this user (to refresh the list)
+        await prisma.userTrialMatch.deleteMany({
+          where: { userId },
+        })
+
+        // Save new matches
+        let savedCount = 0
+        for (const trialId of trialIds) {
+          try {
+            await prisma.userTrialMatch.create({
+              data: {
+                userId,
+                nctId: trialId,
+              },
+            })
+            savedCount++
+          } catch (error: any) {
+            // Ignore unique constraint errors
+            if (error.code !== 'P2002') {
+              console.error(`[UserTrialMatch] Error saving match:`, error)
+            }
+          }
+        }
+
+        console.log(`[UserTrialMatch] Saved ${savedCount} trial matches from ICTRP for user ${userId}`)
+        return { success: true, count: savedCount }
+      } catch (ictrpError) {
+        console.error(`[UserTrialMatch] Error searching ICTRP:`, ictrpError)
+        // Fallback to ClinicalTrials.gov if ICTRP fails
+        console.log(`[UserTrialMatch] Falling back to ClinicalTrials.gov API`)
+      }
+    }
+
+    // Use ClinicalTrials.gov API for USA users or as fallback
     // Build query string for ClinicalTrials.gov API
     const queryParts: string[] = []
 

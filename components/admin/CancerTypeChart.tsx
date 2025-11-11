@@ -9,6 +9,7 @@ interface CancerTypeStat {
 interface CancerTypeChartProps {
   data: CancerTypeStat[]
   total: number
+  onCancerTypeClick?: (cancerType: string) => void
 }
 
 const COLORS = [
@@ -46,7 +47,7 @@ const CANCER_TYPE_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
-export function CancerTypeBarChart({ data, total }: CancerTypeChartProps) {
+export function CancerTypeBarChart({ data, total, onCancerTypeClick }: CancerTypeChartProps) {
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -64,18 +65,28 @@ export function CancerTypeBarChart({ data, total }: CancerTypeChartProps) {
           const width = maxCount > 0 ? (item.count / maxCount) * 100 : 0
           const color = COLORS[index % COLORS.length]
           const label = CANCER_TYPE_LABELS[item.cancerType] || item.cancerType
+          const isClickable = !!onCancerTypeClick
 
           return (
-            <div key={item.cancerType} className="space-y-1">
-              <div className="flex justify-between text-sm">
+            <div 
+              key={item.cancerType} 
+              className="space-y-1"
+            >
+              <div 
+                className={`flex justify-between text-sm ${isClickable ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+                onClick={() => onCancerTypeClick?.(item.cancerType)}
+              >
                 <span className="font-medium">{label}</span>
                 <span className="text-muted-foreground">
                   {item.count} ({item.percentage}%)
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+              <div 
+                className={`w-full bg-gray-200 rounded-full h-6 overflow-hidden ${isClickable ? 'cursor-pointer group' : ''}`}
+                onClick={() => onCancerTypeClick?.(item.cancerType)}
+              >
                 <div
-                  className="h-full rounded-full transition-all duration-300"
+                  className={`h-full rounded-full transition-all duration-300 ${isClickable ? 'group-hover:opacity-80' : ''}`}
                   style={{
                     width: `${width}%`,
                     backgroundColor: color,

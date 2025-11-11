@@ -24,9 +24,10 @@ export function AskTheAI() {
   const handleSend = async () => {
     if (!question.trim()) return
 
+    const currentQuestion = question.trim()
     const userMessage: Message = {
       id: Date.now().toString(),
-      question,
+      question: currentQuestion,
       response: '',
       explanationLevel,
       timestamp: new Date(),
@@ -41,22 +42,36 @@ export function AskTheAI() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question,
+          question: currentQuestion,
           explanationLevel,
         }),
       })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to get response')
+      }
+      
       const data = await response.json()
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        question,
-        response: data.response,
+        question: currentQuestion,
+        response: data.response || 'Sorry, I could not generate a response. Please try again.',
         explanationLevel,
         timestamp: new Date(),
       }
-      setMessages([...messages, userMessage, aiMessage])
+      setMessages((prev) => [...prev, aiMessage])
     } catch (error) {
       console.error('Error sending message:', error)
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        question: currentQuestion,
+        response: 'Sorry, there was an error processing your question. Please try again.',
+        explanationLevel,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setLoading(false)
     }
@@ -93,7 +108,7 @@ export function AskTheAI() {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4">
+        <div className="flex-1 overflow-y-auto space-y-4 max-h-[400px] pr-2">
           {messages.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               Ask me anything about cancer research, treatments, or clinical trials.
