@@ -11,6 +11,7 @@ interface AlertPreferences {
   researchArticles: AlertScope
   news: AlertScope
   aiInsights: AlertScope
+  potentialCures: AlertScope
 }
 
 export function Alerts() {
@@ -20,6 +21,7 @@ export function Alerts() {
     researchArticles: 'all',
     news: 'all',
     aiInsights: 'all',
+    potentialCures: 'all',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -55,6 +57,7 @@ export function Alerts() {
             researchArticles: data.preferences.researchArticles || 'all',
             news: data.preferences.news || 'all',
             aiInsights: data.preferences.aiInsights || 'all',
+            potentialCures: data.preferences.potentialCures || 'all',
           })
         }
       }
@@ -185,6 +188,12 @@ export function Alerts() {
               label="AI Insights"
               value={preferences.aiInsights}
               onChange={(value) => updatePreference('aiInsights', value)}
+              disabled={saving}
+            />
+            <ToggleButton
+              label="Potential Cures"
+              value={preferences.potentialCures}
+              onChange={(value) => updatePreference('potentialCures', value)}
               disabled={saving}
             />
 

@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       researchArticles: 'all',
       news: 'all',
       aiInsights: 'all',
+      potentialCures: 'all',
     }
 
     return NextResponse.json({ preferences: alertPreferences })
@@ -57,7 +58,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate preference values
     const validScopes = ['all', 'myType', 'none']
-    const validKeys = ['clinicalTrials', 'researchArticles', 'news', 'aiInsights']
+    const validKeys = ['clinicalTrials', 'researchArticles', 'news', 'aiInsights', 'potentialCures']
     
     for (const key of validKeys) {
       if (preferences[key] && !validScopes.includes(preferences[key])) {
@@ -84,6 +85,7 @@ export async function PUT(request: NextRequest) {
         researchArticles: preferences.researchArticles || currentPreferences.alerts?.researchArticles || 'all',
         news: preferences.news || currentPreferences.alerts?.news || 'all',
         aiInsights: preferences.aiInsights || currentPreferences.alerts?.aiInsights || 'all',
+        potentialCures: preferences.potentialCures || currentPreferences.alerts?.potentialCures || 'all',
       },
     }
 

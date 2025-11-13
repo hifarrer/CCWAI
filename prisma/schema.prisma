@@ -58,6 +58,7 @@ model User {
   dailyCheckins    DailyCheckIn[]
   aiChatSessions   AiChatSession[]
   trialMatches     UserTrialMatch[]
+  emailAlerts      UserEmailAlert[]
 }
 
 model VerificationToken {
@@ -241,5 +242,20 @@ model UserTrialMatch {
   @@unique([userId, nctId])
   @@index([userId])
   @@index([nctId])
+}
+
+model UserEmailAlert {
+  id          String   @id @default(cuid())
+  userId      String
+  alertType   String   // 'researchArticles', 'news', 'clinicalTrials', 'aiInsights', 'potentialCures'
+  recordId    String   // ID of the ResearchPaper, NewsArticle, etc.
+  recordType  String   // 'ResearchPaper', 'NewsArticle', 'ClinicalTrial', etc.
+  sentAt      DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, alertType, recordId])
+  @@index([userId])
+  @@index([alertType, recordId])
+  @@index([sentAt])
 }
 
