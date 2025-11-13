@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 interface CheckIn {
