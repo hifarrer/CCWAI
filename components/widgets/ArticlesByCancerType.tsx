@@ -62,7 +62,12 @@ export function ArticlesByCancerType() {
                 // Normalize width so the highest percentage fills 100% of the bar
                 const normalizedWidth = maxPercentage > 0 ? (stat.percentage / maxPercentage) * 100 : 0
                 return (
-                  <div key={stat.cancerType} className="bar-row">
+                  <div 
+                    key={stat.cancerType} 
+                    className="bar-row"
+                    onClick={() => handleCancerTypeClick(stat.cancerType)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <span>{stat.cancerType}</span>
                     <div className="bar">
                       <div 

@@ -13,6 +13,7 @@ import { EmotionalSupport } from '@/components/widgets/EmotionalSupport'
 import { DailyCheckIn } from '@/components/widgets/DailyCheckIn'
 import { NCBIQuery } from '@/components/widgets/NCBIQuery'
 import { AIResearch } from '@/components/widgets/AIResearch'
+import { Alerts } from '@/components/widgets/Alerts'
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -43,6 +44,7 @@ export default async function DashboardPage() {
             <CancerTypeOverview />
             <DailyCheckIn />
             <AIResearch />
+            <Alerts />
             <ArticlesByCancerType />
             <LatestNews />
             <AskTheAI />

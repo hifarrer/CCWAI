@@ -148,6 +148,13 @@
 
   .bar-row {
     @apply flex items-center gap-2 text-[0.78rem];
+    transition: background-color 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+
+  .bar-row:hover {
+    background-color: rgba(255, 182, 193, 0.3);
   }
 
   .bar {
