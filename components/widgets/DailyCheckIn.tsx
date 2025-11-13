@@ -1,13 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Calendar, Download, AlertCircle } from 'lucide-react'
 import { DailyCheckInInput } from '@/lib/types'
-import { formatDate } from '@/lib/utils'
 
 interface Symptom {
   name: string
@@ -120,19 +114,15 @@ export function DailyCheckIn() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <div className="widget-header">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Daily Check-In
-          </CardTitle>
-          <CardDescription>
-            Track your symptoms and well-being
-          </CardDescription>
-        </CardHeader>
-      </div>
-      <CardContent className="flex-1 overflow-y-auto space-y-4">
+    <div className="widget widget-fixed">
+      <div className="widget-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="widget-header">
+          <div className="widget-title">
+            <div className="widget-pill pill-green">☺</div>
+            <span>Daily Check-in</span>
+          </div>
+        </div>
+        <div className="widget-subtitle">Track your well-being over time.</div>
         {alert && (
           <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
@@ -140,119 +130,66 @@ export function DailyCheckIn() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="checkin-date">Date</Label>
-            <Input
-              id="checkin-date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-2">
+          <label className="field-label">Today</label>
+          <input
+            className="field-input"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
 
-          <div>
-            <Label>Symptoms (Rate 1-5)</Label>
-            <div className="space-y-3 mt-2">
-              {commonSymptoms.map((symptom) => (
-                <div key={symptom} className="space-y-1">
-                  <Label htmlFor={symptom} className="text-xs capitalize">
-                    {symptom}
-                  </Label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((rating) => {
-                      const emojis = ['😢', '😟', '😐', '😊', '😄']
-                      const colors = ['text-red-500', 'text-yellow-500', 'text-gray-500', 'text-yellow-500', 'text-green-500']
-                      const isSelected = symptoms[symptom] === rating
-                      
-                      return (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setSymptoms({
-                            ...symptoms,
-                            [symptom]: rating,
-                          })}
-                          className={`text-2xl transition-all ${
-                            isSelected 
-                              ? `scale-125 ${colors[rating - 1]}` 
-                              : 'opacity-50 hover:opacity-75 hover:scale-110'
-                          }`}
-                          title={`Rate ${rating}`}
-                        >
-                          {emojis[rating - 1]}
-                        </button>
-                      )
-                    })}
-                  </div>
+          <div className="mt-2 space-y-1">
+            {commonSymptoms.slice(0, 4).map((symptom) => (
+              <div key={symptom} className="symptom-row">
+                <span className="capitalize">{symptom}</span>
+                <div className="emoji-row">
+                  {[1, 2, 3, 4, 5].map((rating) => {
+                    const emojis = ['😞', '😕', '😐', '🙂', '😊']
+                    const isSelected = symptoms[symptom] === rating
+                    
+                    return (
+                      <span
+                        key={rating}
+                        onClick={() => setSymptoms({
+                          ...symptoms,
+                          [symptom]: rating,
+                        })}
+                        style={{ 
+                          cursor: 'pointer',
+                          opacity: isSelected ? 1 : 0.5,
+                          transform: isSelected ? 'scale(1.2)' : 'scale(1)',
+                          transition: 'all 0.2s'
+                        }}
+                        title={`Rate ${rating}`}
+                      >
+                        {emojis[rating - 1]}
+                      </span>
+                    )
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
 
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <textarea
-              id="notes"
-              className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
+          <label className="field-label" style={{ marginTop: '8px' }}>Notes</label>
+          <textarea
+            className="field-textarea"
+            placeholder="Anything you'd like to remember for your doctor?"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Check-In'}
-          </Button>
+          <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Saving...' : 'Save Check-in'}
+            </button>
+          </div>
         </form>
 
-        {checkIns.length > 0 && (
-          <div className="pt-4 border-t">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium">Recent Check-Ins</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportPDF}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {checkIns.slice(0, 5).map((checkIn) => (
-                <div key={checkIn.id} className="border rounded-lg p-3 text-xs">
-                  <p className="font-medium mb-1">
-                    {formatDate(checkIn.checkInDate)}
-                  </p>
-                  {checkIn.notes && (
-                    <p className="text-muted-foreground mb-1">{checkIn.notes}</p>
-                  )}
-                  <div className="flex gap-2 flex-wrap">
-                    {Object.entries(checkIn.symptoms).map(([name, value]) => {
-                      const emojis = ['😢', '😟', '😐', '😊', '😄']
-                      const emoji = emojis[(value as number) - 1] || '😐'
-                      return (
-                        <span key={name} className="text-xs flex items-center gap-1">
-                          {name}: <span className="text-lg">{emoji}</span> ({value}/5)
-                        </span>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="pt-4 border-t text-xs text-muted-foreground">
-          <p className="italic">
-            This tool helps you track symptoms for discussion with your healthcare team. 
-            It does not replace medical advice or emergency care.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

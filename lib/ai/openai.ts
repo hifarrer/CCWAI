@@ -16,3 +16,6 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   return response.data[0].embedding
 }
 
+
+
+

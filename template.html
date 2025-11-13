@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cure Cancer with AI – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --brand-blue: #4db5ff;
+      --brand-purple: #c17ddb;
+      --brand-purple-deep: #a762d9;
+      --brand-green: #8dd08d;
+      --bg: #f7f8fb;
+      --text-main: #1c1c24;
+      --text-muted: #7a7a8c;
+      --card-bg: #ffffff;
+      --border-soft: #e4e7f2;
+      --shadow-soft: 0 10px 25px rgba(16, 24, 40, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top left, #ebf5ff 0, #f7f8fb 50%, #ffffff 100%);
+      color: var(--text-main);
+      line-height: 1.4;
+    }
+
+    .page {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 3px solid var(--brand-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-heart {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--brand-purple);
+    }
+
+    .logo-text-main {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--brand-blue);
+      letter-spacing: 0.02em;
+    }
+
+    .logo-text-sub {
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: var(--brand-green);
+      margin-left: 0.25rem;
+    }
+
+    .tagline {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .widget {
+      position: relative;
+      background: var(--card-bg);
+      border-radius: 26px;
+      box-shadow: var(--shadow-soft);
+      padding: 16px 18px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      overflow: hidden;
+      cursor: pointer;
+
+      /* semi-collapsed state */
+      max-height: 170px;
+      transition: max-height 0.35s ease, box-shadow 0.25s ease,
+        transform 0.2s ease, border-color 0.25s ease;
+    }
+
+    .widget::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at top right,
+        rgba(77, 181, 255, 0.1),
+        rgba(193, 125, 219, 0.05),
+        transparent 55%);
+      pointer-events: none;
+    }
+
+    .widget-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Expanded on hover (desktop) */
+    .widget:hover {
+      max-height: 420px;
+      box-shadow: 0 18px 35px rgba(15, 23, 42, 0.1);
+      transform: translateY(-2px);
+      border-color: rgba(77, 181, 255, 0.4);
+    }
+
+    /* Expanded via JS click */
+    .widget.expanded {
+      max-height: 420px;
+      box-shadow: 0 18px 35px rgba(15, 23, 42, 0.1);
+      border-color: rgba(77, 181, 255, 0.45);
+    }
+
+    .widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .widget-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 0.98rem;
+    }
+
+    .widget-pill {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #fff;
+    }
+
+    .pill-blue {
+      background: var(--brand-blue);
+    }
+
+    .pill-purple {
+      background: var(--brand-purple-deep);
+    }
+
+    .pill-green {
+      background: var(--brand-green);
+    }
+
+    .widget-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .metric-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .metric {
+      flex: 1 1 90px;
+      padding: 8px 10px;
+      border-radius: 18px;
+      background: #f5f8ff;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--brand-blue);
+    }
+
+    .metric-value.green {
+      color: var(--brand-green);
+    }
+
+    .metric-value.purple {
+      color: var(--brand-purple-deep);
+    }
+
+    .chart-placeholder {
+      height: 130px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #ebf5ff, #f7edff);
+      margin-bottom: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-line {
+      position: absolute;
+      inset: 22px 20px 18px;
+      border-radius: 16px;
+      background:
+        linear-gradient(to top, rgba(141, 208, 141, 0.15), transparent 45%) ,
+        linear-gradient(to right, rgba(77, 181, 255, 0.3), rgba(193, 125, 219, 0.5));
+      mask-image: linear-gradient(to right, transparent 0, black 8%, black 92%, transparent 100%);
+    }
+
+    .list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .list-item-title {
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .list-item-meta {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: rgba(77, 181, 255, 0.08);
+      color: var(--brand-blue);
+      margin-left: 4px;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+    }
+
+    .bar {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: #eef1fb;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand-blue), var(--brand-purple));
+    }
+
+    .bar-fill.green {
+      background: linear-gradient(90deg, var(--brand-green), var(--brand-blue));
+    }
+
+    .bar-fill.purple {
+      background: linear-gradient(90deg, var(--brand-purple-deep), var(--brand-blue));
+    }
+
+    .percentage {
+      white-space: nowrap;
+      color: var(--text-muted);
+    }
+
+    .field-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .field-input,
+    .field-select,
+    .field-textarea {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      padding: 7px 11px;
+      font-size: 0.8rem;
+      outline: none;
+      background: #f9fbff;
+      color: var(--text-main);
+    }
+
+    .field-textarea {
+      border-radius: 18px;
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .field-input:focus,
+    .field-select:focus,
+    .field-textarea:focus {
+      border-color: rgba(77, 181, 255, 0.8);
+      box-shadow: 0 0 0 1px rgba(77, 181, 255, 0.3);
+      background: #ffffff;
+    }
+
+    .btn {
+      border: none;
+      outline: none;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-purple-deep));
+      color: #fff;
+      box-shadow: 0 10px 18px rgba(77, 181, 255, 0.45);
+    }
+
+    .btn-secondary {
+      background: #f1f5ff;
+      color: var(--brand-blue);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 20px rgba(15, 23, 42, 0.12);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .chip {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #f1f5ff;
+      font-size: 0.78rem;
+      color: var(--brand-blue);
+      border: 1px solid rgba(77, 181, 255, 0.2);
+    }
+
+    .symptom-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+    }
+
+    .emoji-row {
+      display: flex;
+      gap: 2px;
+      font-size: 1.05rem;
+    }
+
+    .emoji-row span {
+      filter: saturate(1.2);
+    }
+
+    .footnote {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        align-items: flex-start;
+      }
+      .tagline {
+        flex-basis: 100%;
+      }
+      .widget {
+        max-height: 160px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="logo-group">
+        <div class="logo-circle">
+          <div class="logo-heart"></div>
+        </div>
+        <div>
+          <div>
+            <span class="logo-text-main">Cure Cancer</span>
+            <span class="logo-text-sub">with AI</span>
+          </div>
+          <div class="tagline">Friendly assistant for cancer research & symptom tracking.</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid">
+
+      <!-- My Overview -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-blue">i</div>
+              <span>My Overview</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">Personalized insights for your cancer research journey.</div>
+
+          <div class="metric-row">
+            <div class="metric">
+              <span class="metric-label">Clinical Trials</span>
+              <span class="metric-value">14</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">FDA Approvals</span>
+              <span class="metric-value green">3</span>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div class="metric">
+              <span class="metric-label">Total Articles</span>
+              <span class="metric-value purple">1,629</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">New Last 30 Days</span>
+              <span class="metric-value">31</span>
+            </div>
+          </div>
+
+          <ul class="list">
+            <li>
+              <span class="list-item-title">New immunotherapy study shows improved survival.</span>
+              <div class="list-item-meta">Added 2 days ago · Breast Cancer</div>
+            </li>
+            <li>
+              <span class="list-item-title">Updated guidelines for hormone receptor–positive disease.</span>
+              <div class="list-item-meta">Added 5 days ago · Guidelines</div>
+            </li>
+          </ul>
+
+          <p class="footnote">This information is for educational purposes only and does not replace medical advice.</p>
+        </div>
+      </section>
+
+      <!-- Overall Wellness -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-green">✓</div>
+              <span>Overall Wellness</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">Track your symptom improvement over time.</div>
+
+          <div class="metric-row">
+            <div class="metric">
+              <span class="metric-label">Overall Trend</span>
+              <span class="metric-value green">Improving</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Change</span>
+              <span class="metric-value green">+2.0</span>
+            </div>
+          </div>
+
+          <div class="chart-placeholder">
+            <div class="chart-line"></div>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric">
+              <span class="metric-label">Check-ins</span>
+              <span class="metric-value">7</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Current Avg</span>
+              <span class="metric-value green">5.0 / 5.0</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">First Avg</span>
+              <span class="metric-value">3.0</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI Research -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-purple">AI</div>
+              <span>AI Research</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">Simulated AI insights summarizing the latest articles.</div>
+
+          <ul class="list">
+            <li>
+              <span class="list-item-title">
+                New HER2-low study shows benefit in previously untreated patients.
+              </span>
+              <div class="list-item-meta">Today · Clinical Trial · <span class="badge">Summary</span></div>
+            </li>
+            <li>
+              <span class="list-item-title">
+                AI model predicts recurrence risk using imaging and pathology.
+              </span>
+              <div class="list-item-meta">2 days ago · Research</div>
+            </li>
+            <li>
+              <span class="list-item-title">
+                Updated radiation dosing recommendations for specific subtypes.
+              </span>
+              <div class="list-item-meta">5 days ago · Guidelines</div>
+            </li>
+          </ul>
+
+          <button class="btn btn-secondary">View full research feed</button>
+        </div>
+      </section>
+
+      <!-- Articles by Cancer Type -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-blue">📚</div>
+              <span>Articles by Cancer Type</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">Distribution of articles by cancer type.</div>
+
+          <div class="list">
+            <div class="bar-row">
+              <span>Breast</span>
+              <div class="bar">
+                <div class="bar-fill purple" style="width: 65%;"></div>
+              </div>
+              <span class="percentage">65%</span>
+            </div>
+            <div class="bar-row">
+              <span>Lung</span>
+              <div class="bar">
+                <div class="bar-fill" style="width: 18%;"></div>
+              </div>
+              <span class="percentage">18%</span>
+            </div>
+            <div class="bar-row">
+              <span>Colorectal</span>
+              <div class="bar">
+                <div class="bar-fill green" style="width: 9%;"></div>
+              </div>
+              <span class="percentage">9%</span>
+            </div>
+            <div class="bar-row">
+              <span>Prostate</span>
+              <div class="bar">
+                <div class="bar-fill" style="width: 4%;"></div>
+              </div>
+              <span class="percentage">4%</span>
+            </div>
+            <div class="bar-row">
+              <span>Other</span>
+              <div class="bar">
+                <div class="bar-fill" style="width: 4%;"></div>
+              </div>
+              <span class="percentage">4%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ask the AI -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-blue">💬</div>
+              <span>Ask the AI</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">Get answers about cancer research in plain English.</div>
+
+          <div class="chip-row">
+            <button class="btn btn-secondary">Explain like I'm 12</button>
+            <button class="btn btn-secondary">Explain for my oncologist</button>
+          </div>
+
+          <label class="field-label">Your question</label>
+          <input class="field-input" placeholder="What is melanoma?" />
+
+          <div style="margin-top: 10px;">
+            <div class="chip" style="background:#e6f9ee;color:var(--brand-green);border:none;">AI Response</div>
+            <p style="font-size:0.8rem;margin-top:5px;color:var(--text-main);">
+              Melanoma is a type of skin cancer that starts in cells called melanocytes.
+              It can often be treated successfully when found early.
+            </p>
+          </div>
+
+          <p class="footnote">This assistant does not replace medical advice from your healthcare provider.</p>
+        </div>
+      </section>
+
+      <!-- Daily Check-in -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-green">☺</div>
+              <span>Daily Check-in</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">Track your well-being over time.</div>
+
+          <label class="field-label">Today</label>
+          <input class="field-input" type="date" />
+
+          <div style="margin-top:8px;"></div>
+
+          <div class="symptom-row">
+            <span>Nausea</span>
+            <div class="emoji-row">
+              <span>😞</span><span>😕</span><span>😐</span><span>🙂</span><span>😊</span>
+            </div>
+          </div>
+          <div class="symptom-row">
+            <span>Fatigue</span>
+            <div class="emoji-row">
+              <span>😞</span><span>😕</span><span>😐</span><span>🙂</span><span>😊</span>
+            </div>
+          </div>
+          <div class="symptom-row">
+            <span>Pain</span>
+            <div class="emoji-row">
+              <span>😞</span><span>😕</span><span>😐</span><span>🙂</span><span>😊</span>
+            </div>
+          </div>
+          <div class="symptom-row">
+            <span>Mood</span>
+            <div class="emoji-row">
+              <span>😞</span><span>😕</span><span>😐</span><span>🙂</span><span>😊</span>
+            </div>
+          </div>
+
+          <label class="field-label" style="margin-top:8px;">Notes</label>
+          <textarea class="field-textarea" placeholder="Anything you'd like to remember for your doctor?"></textarea>
+
+          <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+            <button class="btn btn-primary">Save Check-in</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Clinical Trials Near Me -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-blue">🔍</div>
+              <span>Clinical Trials Near Me</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">Find potential trials you might discuss with your doctor.</div>
+
+          <label class="field-label">Cancer Type</label>
+          <select class="field-select">
+            <option>Breast Cancer</option>
+            <option>Lung Cancer</option>
+            <option>Colorectal Cancer</option>
+            <option>Prostate Cancer</option>
+          </select>
+
+          <label class="field-label" style="margin-top:8px;">Zip Code</label>
+          <input class="field-input" placeholder="e.g. 60601" />
+
+          <label class="field-label" style="margin-top:8px;">Mutations (optional)</label>
+          <input class="field-input" placeholder="e.g. BRCA1, BRCA2" />
+
+          <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+            <button class="btn btn-primary">Find Trials</button>
+          </div>
+
+          <p class="footnote">
+            This tool is informational only and does not replace medical advice or clinical trial eligibility review.
+          </p>
+        </div>
+      </section>
+
+      <!-- Symptoms Trend -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-green">📈</div>
+              <span>Symptoms Trend</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">See how your symptoms change over time.</div>
+
+          <div class="list">
+            <div class="bar-row">
+              <span>Mood</span>
+              <div class="bar">
+                <div class="bar-fill green" style="width: 80%;"></div>
+              </div>
+              <span class="percentage">Improving</span>
+            </div>
+            <div class="bar-row">
+              <span>Pain</span>
+              <div class="bar">
+                <div class="bar-fill" style="width: 40%;"></div>
+              </div>
+              <span class="percentage">Stable</span>
+            </div>
+            <div class="bar-row">
+              <span>Fatigue</span>
+              <div class="bar">
+                <div class="bar-fill" style="width: 55%;"></div>
+              </div>
+              <span class="percentage">Slightly better</span>
+            </div>
+            <div class="bar-row">
+              <span>Sleep</span>
+              <div class="bar">
+                <div class="bar-fill green" style="width: 70%;"></div>
+              </div>
+              <span class="percentage">Improving</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Check-ins -->
+      <section class="widget">
+        <div class="widget-inner">
+          <div class="widget-header">
+            <div class="widget-title">
+              <div class="widget-pill pill-purple">🗓</div>
+              <span>Recent Check-ins</span>
+            </div>
+          </div>
+          <div class="widget-subtitle">Quick glimpse of your last few days.</div>
+
+          <ul class="list">
+            <li>
+              <span class="list-item-title">Nov 10 · Mood 😊 · Pain 🙂</span>
+              <div class="list-item-meta">Fatigue 😐 · Sleep 🙂</div>
+            </li>
+            <li>
+              <span class="list-item-title">Nov 9 · Mood 🙂 · Pain 😕</span>
+              <div class="list-item-meta">Fatigue 😕 · Sleep 😊</div>
+            </li>
+            <li>
+              <span class="list-item-title">Nov 8 · Mood 😐 · Pain 🙂</span>
+              <div class="list-item-meta">Fatigue 🙂 · Sleep 🙂</div>
+            </li>
+          </ul>
+
+          <button class="btn btn-secondary">Export as PDF</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // Make widgets expandable on tap/click (especially for mobile)
+    const widgets = document.querySelectorAll(".widget");
+    widgets.forEach(widget => {
+      widget.addEventListener("click", function (e) {
+        // avoid click from focusing inputs toggling repeatedly
+        const tag = e.target.tagName.toLowerCase();
+        if (["input", "textarea", "select", "button"].includes(tag)) return;
+        this.classList.toggle("expanded");
+      });
+    });
+  </script>
+</body>
+</html>

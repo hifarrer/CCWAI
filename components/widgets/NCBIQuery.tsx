@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Database, Search, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
+import { Search, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
 import { CancerType } from '@/lib/types'
 
 type DatabaseType = 'pubmed' | 'protein' | 'nucleotide' | 'gene' | 'snp' | 'structure' | 'taxonomy'
@@ -417,19 +415,15 @@ export function NCBIQuery() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <div className="widget-header">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            NCBI Query Tool
-          </CardTitle>
-          <CardDescription>
-            Search and retrieve information from NCBI databases
-          </CardDescription>
-        </CardHeader>
-      </div>
-      <CardContent className="flex-1 flex flex-col space-y-4 overflow-hidden">
+    <div className="widget widget-fixed">
+      <div className="widget-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="widget-header">
+          <div className="widget-title">
+            <div className="widget-pill pill-blue">🔬</div>
+            <span>NCBI Query</span>
+          </div>
+        </div>
+        <div className="widget-subtitle">Search and retrieve information from NCBI databases.</div>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="database">Database</Label>
@@ -633,10 +627,10 @@ export function NCBIQuery() {
             </div>
           )}
 
-          <Button
+          <button
             onClick={handleSearch}
             disabled={loading || (queryType === 'esearch' && !queryTerm.trim()) || ((queryType === 'esummary' || queryType === 'efetch') && !ids.trim())}
-            className="w-full"
+            className="btn btn-primary w-full"
           >
             {loading ? (
               <>
@@ -649,7 +643,7 @@ export function NCBIQuery() {
                 Search
               </>
             )}
-          </Button>
+          </button>
         </div>
 
         {error && (
@@ -914,8 +908,8 @@ export function NCBIQuery() {
             .
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

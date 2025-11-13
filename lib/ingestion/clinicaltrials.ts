@@ -102,3 +102,6 @@ export async function ingestClinicalTrials(trialsData?: any[]) {
   return { ingested, errors }
 }
 
+
+
+

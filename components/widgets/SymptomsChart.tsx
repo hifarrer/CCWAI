@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
@@ -82,9 +81,9 @@ export function SymptomsChart() {
         const change = lastValue - firstValue
 
         let trend: 'improving' | 'worsening' | 'stable' = 'stable'
-        if (change < -0.5) {
-          trend = 'improving' // Lower number is better (1 is worst, 5 is best)
-        } else if (change > 0.5) {
+        if (change > 0.5) {
+          trend = 'improving' // Higher number is better (1 is worst, 5 is best)
+        } else if (change < -0.5) {
           trend = 'worsening'
         }
 
@@ -141,132 +140,94 @@ export function SymptomsChart() {
 
   if (loading) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardHeader>
-          <CardTitle>Symptoms Trend</CardTitle>
-          <CardDescription>Track your symptom improvement over time</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center">
+      <div className="widget">
+        <div className="widget-inner">
+          <div className="widget-header">
+            <div className="widget-title">
+              <div className="widget-pill pill-green">📈</div>
+              <span>Symptoms Trend</span>
+            </div>
+          </div>
+          <div className="widget-subtitle">See how your symptoms change over time.</div>
           <div className="text-muted-foreground">Loading...</div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   if (checkIns.length === 0) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardHeader>
-          <CardTitle>Symptoms Trend</CardTitle>
-          <CardDescription>Track your symptom improvement over time</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center">
+      <div className="widget">
+        <div className="widget-inner">
+          <div className="widget-header">
+            <div className="widget-title">
+              <div className="widget-pill pill-green">📈</div>
+              <span>Symptoms Trend</span>
+            </div>
+          </div>
+          <div className="widget-subtitle">See how your symptoms change over time.</div>
           <div className="text-center text-muted-foreground text-sm">
             No check-in data available. Start tracking your symptoms to see trends.
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Symptoms Trend</CardTitle>
-        <CardDescription>Track your symptom improvement over time</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-6 max-h-[500px] pr-2">
+    <div className="widget">
+      <div className="widget-inner">
+        <div className="widget-header">
+          <div className="widget-title">
+            <div className="widget-pill pill-green">📈</div>
+            <span>Symptoms Trend</span>
+          </div>
+        </div>
+        <div className="widget-subtitle">See how your symptoms change over time.</div>
         {trends.length === 0 ? (
           <div className="text-center text-muted-foreground text-sm">
             Need at least 2 check-ins to show trends.
           </div>
         ) : (
-          trends.map((trend) => {
-            const maxValue = getMaxValue(trend.data)
-            const minValue = getMinValue(trend.data)
-            const range = maxValue - minValue || 1
-
-            return (
-              <div key={trend.symptom} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium capitalize">{trend.symptom}</span>
-                    {getTrendIcon(trend.trend)}
-                    <span className={`text-xs font-medium ${getTrendColor(trend.trend)}`}>
-                      {trend.trend === 'improving' ? 'Improving' : 
-                       trend.trend === 'worsening' ? 'Worsening' : 'Stable'}
-                    </span>
+          <div className="list">
+            {trends.slice(0, 4).map((trend) => {
+              const latestValue = trend.data[trend.data.length - 1].value
+              const percentage = ((latestValue - 1) / 4) * 100
+              const trendLabel = trend.trend === 'improving' ? 'Improving' : 
+                                trend.trend === 'worsening' ? 'Worsening' : 'Stable'
+              
+              // Get trend icon and color
+              const trendIcon = getTrendIcon(trend.trend)
+              const trendColorClass = getTrendColor(trend.trend)
+              
+              // Format change value
+              const changeValue = trend.change > 0 ? `+${trend.change.toFixed(1)}` : trend.change.toFixed(1)
+              
+              // Determine bar color based on trend
+              const barColorClass = trend.trend === 'improving' ? 'green' : 
+                                   trend.trend === 'worsening' ? 'purple' : ''
+              
+              return (
+                <div key={trend.symptom} className="bar-row">
+                  <span className="capitalize">{trend.symptom}</span>
+                  <div className="bar">
+                    <div 
+                      className={`bar-fill ${barColorClass}`}
+                      style={{ width: `${percentage}%` }}
+                    ></div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {trend.data.length} check-ins
-                  </div>
-                </div>
-                
-                {/* Simple line chart visualization */}
-                <div className="relative h-20 bg-gray-50 rounded-lg p-2 border">
-                  <div className="flex items-end justify-between h-full gap-1">
-                    {trend.data.map((point, index) => {
-                      // Normalize height: map value (1-5) to height percentage
-                      // Value 1 = 10%, Value 5 = 100%
-                      const height = ((point.value - 1) / 4) * 90 + 10
-                      const isLatest = index === trend.data.length - 1
-                      
-                      return (
-                        <div
-                          key={index}
-                          className="flex-1 flex flex-col items-center justify-end group relative min-w-[20px]"
-                        >
-                          <div
-                            className={`w-full rounded-t transition-all ${
-                              point.value <= 2 
-                                ? 'bg-red-400' 
-                                : point.value === 3 
-                                ? 'bg-yellow-400' 
-                                : 'bg-green-400'
-                            } ${isLatest ? 'ring-2 ring-offset-1 ring-gray-600' : ''}`}
-                            style={{ height: `${height}%`, minHeight: '8px' }}
-                            title={`${point.date}: ${getEmoji(point.value)} (${point.value}/5)`}
-                          />
-                          {isLatest && (
-                            <span className="absolute -top-5 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                              {getEmoji(point.value)}
-                            </span>
-                          )}
-                          <span className="text-[8px] text-muted-foreground mt-1 truncate w-full text-center">
-                            {new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  
-                  {/* Y-axis labels */}
-                  <div className="absolute -left-8 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground">
-                    <span className="text-[10px]">5</span>
-                    <span className="text-[10px]">1</span>
+                  <div className={`percentage ${trendColorClass}`} style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                    {trendIcon}
+                    <span>{trendLabel}</span>
+                    <span style={{ fontSize: '0.85em', opacity: 0.8 }}>({changeValue})</span>
                   </div>
                 </div>
-
-                {/* Data points summary */}
-                <div className="flex gap-2 text-xs text-muted-foreground">
-                  <span>First: {getEmoji(trend.data[0].value)} ({trend.data[0].value}/5)</span>
-                  <span>•</span>
-                  <span>Latest: {getEmoji(trend.data[trend.data.length - 1].value)} ({trend.data[trend.data.length - 1].value}/5)</span>
-                  {trend.change !== 0 && (
-                    <>
-                      <span>•</span>
-                      <span className={getTrendColor(trend.trend)}>
-                        Change: {trend.change > 0 ? '+' : ''}{trend.change.toFixed(1)}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            )
-          })
+              )
+            })}
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CancerTypeBarChart } from '@/components/admin/CancerTypeChart'
-import { BarChart3 } from 'lucide-react'
 
 interface CancerTypeStat {
   cancerType: string
@@ -45,39 +42,45 @@ export function ArticlesByCancerType() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
-          Articles by Cancer Type
-        </CardTitle>
-        <CardDescription>
-          Distribution of research articles by cancer type. Click on any cancer type to view articles.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto max-h-[500px] pr-2">
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-muted-foreground">Loading...</div>
+    <div className="widget widget-fixed">
+      <div className="widget-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="widget-header">
+          <div className="widget-title">
+            <div className="widget-pill pill-blue">📚</div>
+            <span>Articles by Cancer Type</span>
           </div>
+        </div>
+        <div className="widget-subtitle">Distribution of articles by cancer type.</div>
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
         ) : stats && stats.cancerTypeStats && stats.cancerTypeStats.length > 0 ? (
-          <div className="space-y-4">
-            <div className="text-sm text-muted-foreground sticky top-0 bg-background pb-2 z-10">
-              Total articles: {stats.totalPapers.toLocaleString()}
-            </div>
-            <CancerTypeBarChart
-              data={stats.cancerTypeStats}
-              total={stats.totalPapers}
-              onCancerTypeClick={handleCancerTypeClick}
-            />
+          <div className="list" style={{ flex: 1, minHeight: 0 }}>
+            {(() => {
+              // Calculate max percentage to normalize bars (highest value shows as 100%)
+              const maxPercentage = Math.max(...stats.cancerTypeStats.map((s) => s.percentage))
+              return stats.cancerTypeStats.map((stat) => {
+                // Normalize width so the highest percentage fills 100% of the bar
+                const normalizedWidth = maxPercentage > 0 ? (stat.percentage / maxPercentage) * 100 : 0
+                return (
+                  <div key={stat.cancerType} className="bar-row">
+                    <span>{stat.cancerType}</span>
+                    <div className="bar">
+                      <div 
+                        className={`bar-fill ${stat.percentage > 50 ? 'purple' : stat.percentage > 20 ? '' : 'green'}`}
+                        style={{ width: `${normalizedWidth}%` }}
+                      ></div>
+                    </div>
+                    <span className="percentage">{stat.percentage}%</span>
+                  </div>
+                )
+              })
+            })()}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-64 text-muted-foreground">
-            No data available
-          </div>
+          <div className="text-center py-8 text-muted-foreground text-sm">No data available</div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

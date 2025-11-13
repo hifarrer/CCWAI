@@ -11,9 +11,8 @@ import { CancerTypeOverview } from '@/components/widgets/CancerTypeOverview'
 import { ArticlesByCancerType } from '@/components/widgets/ArticlesByCancerType'
 import { EmotionalSupport } from '@/components/widgets/EmotionalSupport'
 import { DailyCheckIn } from '@/components/widgets/DailyCheckIn'
-import { SymptomsChart } from '@/components/widgets/SymptomsChart'
-import { OverallWellness } from '@/components/widgets/OverallWellness'
 import { NCBIQuery } from '@/components/widgets/NCBIQuery'
+import { AIResearch } from '@/components/widgets/AIResearch'
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -37,26 +36,20 @@ export default async function DashboardPage() {
 
   return (
     <SessionProvider session={session}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         <Header />
-        <main className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold">Dashboard</h2>
-            <p className="text-muted-foreground mt-2">
-              Your personalized cancer research companion
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <main className="max-w-[1240px] mx-auto px-4 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <CancerTypeOverview />
+            <DailyCheckIn />
+            <AIResearch />
             <ArticlesByCancerType />
-            <NCBIQuery />
-            <ClinicalTrials />
             <LatestNews />
             <AskTheAI />
-            <EmotionalSupport />
-            <DailyCheckIn />
-            <SymptomsChart />
-            <OverallWellness />
+            <NCBIQuery />
+            <ClinicalTrials />
+            
+            
           </div>
         </main>
       </div>

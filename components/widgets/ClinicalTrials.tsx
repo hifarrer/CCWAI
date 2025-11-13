@@ -1,12 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Search, MapPin, AlertCircle } from 'lucide-react'
 import { TrialMatchCriteria, CancerType } from '@/lib/types'
+import { ExternalLink } from 'lucide-react'
 
 interface Trial {
   id: string
@@ -70,35 +66,20 @@ export function ClinicalTrials() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <div className="widget-header">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Clinical Trials Near Me
-          </CardTitle>
-          <CardDescription>
-            Find potential clinical trials
-          </CardDescription>
-        </CardHeader>
-      </div>
-      <CardContent className="flex-1 overflow-y-auto space-y-4">
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="age">Age</Label>
-            <Input
-              id="age"
-              type="number"
-              placeholder="e.g., 45"
-              value={criteria.age || ''}
-              onChange={(e) => setCriteria({ ...criteria, age: parseInt(e.target.value) || undefined })}
-            />
+    <div className="widget widget-fixed">
+      <div className="widget-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="widget-header">
+          <div className="widget-title">
+            <div className="widget-pill pill-blue">🔍</div>
+            <span>Clinical Trials Near Me</span>
           </div>
+        </div>
+        <div className="widget-subtitle">Find potential trials you might discuss with your doctor.</div>
+        <div className="space-y-2">
           <div>
-            <Label htmlFor="search-term">Search Term</Label>
-            <Input
-              id="search-term"
-              placeholder="e.g., Breast Cancer"
+            <label className="field-label">Cancer Type</label>
+            <select
+              className="field-select"
               value={criteria.cancerType || ''}
               onChange={(e) => {
                 const value = e.target.value
@@ -107,13 +88,28 @@ export function ClinicalTrials() {
                   cancerType: value ? (value as CancerType) : undefined 
                 })
               }}
+            >
+              <option value="">Select Cancer Type</option>
+              <option value="breast">Breast Cancer</option>
+              <option value="lung">Lung Cancer</option>
+              <option value="colorectal">Colorectal Cancer</option>
+              <option value="prostate">Prostate Cancer</option>
+            </select>
+          </div>
+          <div>
+            <label className="field-label">Zip Code</label>
+            <input
+              className="field-input"
+              placeholder="e.g. 60601"
+              value={criteria.zipCode || ''}
+              onChange={(e) => setCriteria({ ...criteria, zipCode: e.target.value })}
             />
           </div>
           <div>
-            <Label htmlFor="mutations">Mutations (comma-separated)</Label>
-            <Input
-              id="mutations"
-              placeholder="e.g., EGFR, KRAS"
+            <label className="field-label">Mutations (optional)</label>
+            <input
+              className="field-input"
+              placeholder="e.g. BRCA1, BRCA2"
               value={criteria.mutations?.join(', ') || ''}
               onChange={(e) => setCriteria({
                 ...criteria,
@@ -121,130 +117,45 @@ export function ClinicalTrials() {
               })}
             />
           </div>
-          <div>
-            <Label htmlFor="zip-code">Zip Code</Label>
-            <Input
-              id="zip-code"
-              placeholder="e.g., 10001"
-              value={criteria.zipCode || ''}
-              onChange={(e) => setCriteria({ ...criteria, zipCode: e.target.value })}
-            />
+          <div className="flex justify-end mt-2">
+            <button className="btn btn-primary" onClick={handleMatch} disabled={loading}>
+              {loading ? 'Searching...' : 'Find Trials'}
+            </button>
           </div>
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <select
-              id="status"
-              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={criteria.status?.join(',') || ''}
-              onChange={(e) => {
-                const value = e.target.value
-                setCriteria({ 
-                  ...criteria, 
-                  status: value ? value.split(',').filter(Boolean) as any : undefined 
-                })
-              }}
-            >
-              <option value="">All Statuses (default: Recruiting)</option>
-              <option value="RECRUITING">Recruiting</option>
-              <option value="NOT_YET_RECRUITING">Not Yet Recruiting</option>
-              <option value="ENROLLING_BY_INVITATION">Enrolling by Invitation</option>
-              <option value="RECRUITING,NOT_YET_RECRUITING,ENROLLING_BY_INVITATION">Recruiting (All Types)</option>
-              <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="SUSPENDED">Suspended</option>
-              <option value="TERMINATED">Terminated</option>
-            </select>
-          </div>
-          <Button onClick={handleMatch} className="w-full" disabled={loading}>
-            {loading ? 'Searching...' : <><Search className="h-4 w-4 mr-2" />Find Trials</>}
-          </Button>
         </div>
 
         {error && (
-          <div className="pt-4 border-t">
-            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-red-800">{error}</p>
-            </div>
-          </div>
+          <div className="mt-2 text-xs text-red-600">{error}</div>
         )}
 
         {trials.length > 0 && (
-          <div className="space-y-3 pt-4 border-t">
-            {trials.map((trial) => (
-              <div key={trial.id} className="border rounded-lg p-3 space-y-2">
+          <ul className="list mt-2">
+            {trials.slice(0, 3).map((trial) => (
+              <li 
+                key={trial.id}
+                onClick={() => {
+                  if (trial.nctId) {
+                    window.open(`https://clinicaltrials.gov/study/${trial.nctId}`, '_blank', 'noopener,noreferrer')
+                  }
+                }}
+                className="cursor-pointer hover:bg-gray-50 transition-colors"
+                style={{ cursor: trial.nctId ? 'pointer' : 'default' }}
+              >
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-sm flex-1">{trial.title}</h3>
-                  <a
-                    href={`https://clinicaltrials.gov/study/${trial.nctId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline flex-shrink-0"
-                  >
-                    {trial.nctId}
-                  </a>
-                </div>
-                {trial.status && (
-                  <p className="text-xs">
-                    Status: <span className="font-medium">{trial.status}</span>
-                  </p>
-                )}
-                {trial.conditions.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Conditions: {trial.conditions.join(', ')}
-                  </p>
-                )}
-                {(trial.minimumAge || trial.maximumAge) && (
-                  <p className="text-xs text-muted-foreground">
-                    Age: {trial.minimumAge || 'N/A'} - {trial.maximumAge || 'N/A'}
-                  </p>
-                )}
-                {trial.locations && trial.locations.length > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium">Locations:</span>
-                    <ul className="list-disc list-inside ml-2 mt-1 space-y-0.5">
-                      {trial.locations.slice(0, 3).map((loc, idx) => (
-                        <li key={idx}>
-                          {[
-                            loc.facility,
-                            loc.city,
-                            loc.state,
-                            loc.zip
-                          ].filter(Boolean).join(', ') || 'Location not specified'}
-                        </li>
-                      ))}
-                      {trial.locations.length > 3 && (
-                        <li className="italic">+ {trial.locations.length - 3} more locations</li>
-                      )}
-                    </ul>
+                  <div className="flex-1 min-w-0">
+                    <span className="list-item-title">{trial.title}</span>
+                    <div className="list-item-meta">{trial.status || 'Status unknown'}</div>
                   </div>
-                )}
-                {trial.eligibilityCriteria && (
-                  <details className="text-xs">
-                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium">
-                      View Eligibility Criteria
-                    </summary>
-                    <p className="mt-2 text-muted-foreground line-clamp-4">
-                      {trial.eligibilityCriteria}
-                    </p>
-                  </details>
-                )}
-                <p className="text-xs italic text-primary pt-1">
-                  This might be worth asking about with your oncologist.
-                </p>
-              </div>
+                  {trial.nctId && (
+                    <ExternalLink className="h-4 w-4 text-gray-400 flex-shrink-0 mt-1" />
+                  )}
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-
-        <div className="pt-4 border-t text-xs text-muted-foreground">
-          <p className="italic">
-            This information is for educational purposes only and does not constitute medical advice. 
-            Consult your healthcare provider for personalized medical guidance.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

@@ -1,10 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { MessageSquare, Send, Brain } from 'lucide-react'
 import { ExplanationLevel } from '@/lib/types'
 
 interface Message {
@@ -77,82 +73,63 @@ export function AskTheAI() {
     }
   }
 
+  const latestMessage = messages.length > 0 ? messages[messages.length - 1] : null
+
   return (
-    <Card className="h-full flex flex-col">
-      <div className="widget-header">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            Ask the AI
-          </CardTitle>
-          <CardDescription>
-            Get answers about cancer research in plain English
-          </CardDescription>
-        </CardHeader>
-      </div>
-      <CardContent className="flex-1 flex flex-col space-y-4">
-        <div className="flex gap-2">
-          <Button
-            variant={explanationLevel === 'layperson' ? 'default' : 'outline'}
-            size="sm"
+    <div className="widget widget-fixed">
+      <div className="widget-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="widget-header">
+          <div className="widget-title">
+            <div className="widget-pill pill-blue">💬</div>
+            <span>Ask the AI</span>
+          </div>
+        </div>
+        <div className="widget-subtitle">Get answers about cancer research in plain English.</div>
+
+        <div className="chip-row">
+          <button
+            className={`btn btn-secondary ${explanationLevel === 'layperson' ? 'opacity-100' : 'opacity-60'}`}
             onClick={() => setExplanationLevel('layperson')}
           >
             Explain like I'm 12
-          </Button>
-          <Button
-            variant={explanationLevel === 'clinical' ? 'default' : 'outline'}
-            size="sm"
+          </button>
+          <button
+            className={`btn btn-secondary ${explanationLevel === 'clinical' ? 'opacity-100' : 'opacity-60'}`}
             onClick={() => setExplanationLevel('clinical')}
           >
             Explain for my oncologist
-          </Button>
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4 max-h-[400px] pr-2">
-          {messages.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              Ask me anything about cancer research, treatments, or clinical trials.
+        <label className="field-label">Your question</label>
+        <input
+          className="field-input"
+          placeholder="What is melanoma?"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+        />
+
+        {latestMessage?.response && (
+          <div className="mt-2">
+            <div className="chip" style={{ background: '#e6f9ee', color: 'var(--brand-green)', border: 'none' }}>
+              AI Response
             </div>
-          ) : (
-            messages.map((message) => (
-              <div key={message.id} className="space-y-2">
-                <div className="bg-gray-100 rounded-lg p-3">
-                  <p className="text-sm font-medium">You:</p>
-                  <p className="text-sm">{message.question}</p>
-                </div>
-                {message.response && (
-                  <div className="bg-blue-50 rounded-lg p-3">
-                    <p className="text-sm font-medium">AI:</p>
-                    <p className="text-sm whitespace-pre-wrap">{message.response}</p>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-          {loading && (
-            <div className="text-center text-muted-foreground text-sm">Thinking...</div>
-          )}
-        </div>
+            <p className="text-[0.8rem] mt-1 text-[var(--text-main)]">
+              {latestMessage.response}
+            </p>
+          </div>
+        )}
 
-        <div className="flex gap-2 pt-4 border-t">
-          <Input
-            placeholder="Ask a question..."
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          />
-          <Button onClick={handleSend} disabled={loading || !question.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+        {loading && (
+          <div className="text-center text-muted-foreground text-sm mt-2">Thinking...</div>
+        )}
 
-        <div className="pt-2 text-xs text-muted-foreground">
-          <p className="italic">
-            This AI provides information only and does not replace medical advice from your healthcare provider.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+        <p className="footnote">
+          This assistant does not replace medical advice from your healthcare provider.
+        </p>
+      </div>
+    </div>
   )
 }
 
