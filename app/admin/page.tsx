@@ -484,9 +484,14 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <Button onClick={() => signOut({ callbackUrl: '/' })} variant="outline">
-            Sign Out
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => router.push('/admin/plans')} variant="outline">
+              Manage Plans
+            </Button>
+            <Button onClick={() => signOut({ callbackUrl: '/' })} variant="outline">
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         {/* Usage Statistics */}

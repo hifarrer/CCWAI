@@ -50,9 +50,11 @@ model User {
   isInUSA      Boolean?  // Whether user is in USA (for zipCode validation)
   preferences  Json      @default("{}")
   profileCompleted Boolean @default(false) // Track if onboarding is complete
+  planId       String?   // Subscription plan ID
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  plan             SubscriptionPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
   accounts         Account[]
   sessions         Session[]
   dailyCheckins    DailyCheckIn[]
@@ -259,5 +261,21 @@ model UserEmailAlert {
   @@index([alertType, recordId])
   @@index([sentAt])
   @@index([readAt])
+}
+
+model SubscriptionPlan {
+  id                    String   @id @default(cuid())
+  name                  String
+  features              String[] // List of features as bullet points
+  monthlyPrice          Decimal  @db.Decimal(10, 2)
+  yearlyPrice           Decimal  @db.Decimal(10, 2)
+  monthlyStripePriceId  String?  // Stripe price ID for monthly subscription
+  yearlyStripePriceId   String?  // Stripe price ID for yearly subscription
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  users                 User[]
+
+  @@index([name])
 }
 
