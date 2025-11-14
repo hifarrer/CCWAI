@@ -19,15 +19,25 @@ export async function GET(request: NextRequest) {
     })
 
     // Convert Decimal to number for JSON serialization
-    const serializedPlans = plans.map((plan) => ({
-      ...plan,
-      monthlyPrice: typeof plan.monthlyPrice === 'object' && 'toNumber' in plan.monthlyPrice
-        ? plan.monthlyPrice.toNumber()
-        : parseFloat(plan.monthlyPrice.toString()),
-      yearlyPrice: typeof plan.yearlyPrice === 'object' && 'toNumber' in plan.yearlyPrice
-        ? plan.yearlyPrice.toNumber()
-        : parseFloat(plan.yearlyPrice.toString()),
-    }))
+    const serializedPlans = plans.map((plan) => {
+      const monthlyPrice = typeof plan.monthlyPrice === 'object' && plan.monthlyPrice !== null && 'toNumber' in plan.monthlyPrice
+        ? (plan.monthlyPrice as any).toNumber()
+        : typeof plan.monthlyPrice === 'number'
+        ? plan.monthlyPrice
+        : parseFloat(String(plan.monthlyPrice))
+      
+      const yearlyPrice = typeof plan.yearlyPrice === 'object' && plan.yearlyPrice !== null && 'toNumber' in plan.yearlyPrice
+        ? (plan.yearlyPrice as any).toNumber()
+        : typeof plan.yearlyPrice === 'number'
+        ? plan.yearlyPrice
+        : parseFloat(String(plan.yearlyPrice))
+
+      return {
+        ...plan,
+        monthlyPrice,
+        yearlyPrice,
+      }
+    })
 
     return NextResponse.json({ plans: serializedPlans })
   } catch (error) {
