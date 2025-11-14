@@ -68,6 +68,12 @@ export function Header() {
         </div>
         <div className="flex items-center gap-4">
           <Link
+            href="/about"
+            className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            About
+          </Link>
+          <Link
             href="/plans"
             className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
           >
@@ -79,6 +85,18 @@ export function Header() {
           >
             Contact
           </Link>
+          <Button asChild variant="default" size="sm" className="bg-pink-600 hover:bg-pink-700">
+            <Link href="/donations">
+              Support our project
+            </Link>
+          </Button>
+          {!session?.user && (
+            <Button asChild variant="default" size="sm">
+              <Link href="/login">
+                Login
+              </Link>
+            </Button>
+          )}
           {session?.user && (
             <>
               <Button

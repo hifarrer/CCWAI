@@ -50,6 +50,32 @@
   }
 }
 
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
+
 @layer components {
   .widget {
     @apply relative bg-white rounded-[26px] shadow-[0_10px_25px_rgba(16,24,40,0.06)] p-4 border border-white/90 overflow-hidden cursor-pointer;

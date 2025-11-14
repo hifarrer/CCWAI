@@ -21,10 +21,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="flex-1 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
+      <main className="max-w-[1240px] mx-auto px-4 py-12">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Welcome to Cure Cancer With Ai</CardTitle>
           <CardDescription>
@@ -93,7 +94,8 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
-      </div>
+        </div>
+      </main>
       <Footer />
     </div>
   )
