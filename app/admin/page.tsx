@@ -115,6 +115,20 @@ export default function AdminPage() {
   })
   const [articlePagination, setArticlePagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 })
   const [loadingArticles, setLoadingArticles] = useState(false)
+  const [stripeSettings, setStripeSettings] = useState<{
+    publishableKey: string | null
+    secretKey: string | null
+    rawSecretKey: string | null
+    webhookSecret: string | null
+    updatedAt?: string
+    createdAt?: string
+  } | null>(null)
+  const [stripeForm, setStripeForm] = useState({
+    publishableKey: '',
+    secretKey: '',
+    webhookSecret: '',
+  })
+  const [savingStripeSettings, setSavingStripeSettings] = useState(false)
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'admin') {
@@ -122,6 +136,7 @@ export default function AdminPage() {
       fetchUsers()
       fetchRssFeeds()
       fetchNcbiQueries()
+      fetchStripeSettings()
     }
   }, [session, status])
 
@@ -427,6 +442,52 @@ export default function AdminPage() {
     e.preventDefault()
     setArticlePagination({ ...articlePagination, page: 1 })
     fetchArticles()
+  }
+
+  const fetchStripeSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/stripe-settings')
+      if (res.ok) {
+        const data = await res.json()
+        setStripeSettings(data.settings)
+        setStripeForm({
+          publishableKey: data.settings.publishableKey || '',
+          secretKey: data.settings.rawSecretKey || '', // Use raw secret key for editing
+          webhookSecret: data.settings.webhookSecret || '',
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching Stripe settings:', error)
+    }
+  }
+
+  const handleSaveStripeSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingStripeSettings(true)
+    try {
+      const res = await fetch('/api/admin/stripe-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publishableKey: stripeForm.publishableKey || null,
+          secretKey: stripeForm.secretKey || null,
+          webhookSecret: stripeForm.webhookSecret || null,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setStripeSettings(data.settings)
+        alert('Stripe settings saved successfully')
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Failed to save Stripe settings')
+      }
+    } catch (error) {
+      console.error('Error saving Stripe settings:', error)
+      alert('Error saving Stripe settings')
+    } finally {
+      setSavingStripeSettings(false)
+    }
   }
 
   if (status === 'loading') {
@@ -1503,6 +1564,92 @@ export default function AdminPage() {
                 </Card>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Stripe Settings */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Stripe Settings</CardTitle>
+            <CardDescription>
+              Configure Stripe API keys for payment processing
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSaveStripeSettings} className="space-y-4">
+              <div>
+                <Label htmlFor="publishableKey">Publishable Key</Label>
+                <Input
+                  id="publishableKey"
+                  type="text"
+                  value={stripeForm.publishableKey}
+                  onChange={(e) =>
+                    setStripeForm({ ...stripeForm, publishableKey: e.target.value })
+                  }
+                  placeholder="pk_test_..."
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your Stripe publishable key (starts with pk_)
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="secretKey">Secret Key</Label>
+                <Input
+                  id="secretKey"
+                  type="password"
+                  value={stripeForm.secretKey}
+                  onChange={(e) =>
+                    setStripeForm({ ...stripeForm, secretKey: e.target.value })
+                  }
+                  placeholder="sk_test_..."
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your Stripe secret key (starts with sk_). Keep this secure.
+                  {stripeSettings?.secretKey && stripeForm.secretKey === '' && (
+                    <span className="block mt-1">
+                      Current: {stripeSettings.secretKey} (masked)
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="webhookSecret">Webhook Secret</Label>
+                <Input
+                  id="webhookSecret"
+                  type="password"
+                  value={stripeForm.webhookSecret}
+                  onChange={(e) =>
+                    setStripeForm({ ...stripeForm, webhookSecret: e.target.value })
+                  }
+                  placeholder="whsec_..."
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your Stripe webhook signing secret (starts with whsec_)
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={savingStripeSettings}>
+                  {savingStripeSettings ? 'Saving...' : 'Save Settings'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fetchStripeSettings()}
+                >
+                  Reset
+                </Button>
+              </div>
+              {stripeSettings && (stripeSettings.updatedAt || stripeSettings.createdAt) && (
+                <div className="text-xs text-muted-foreground pt-4 border-t">
+                  <p>
+                    Last updated: {new Date(stripeSettings.updatedAt || stripeSettings.createdAt || Date.now()).toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </form>
           </CardContent>
         </Card>
       </div>

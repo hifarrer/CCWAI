@@ -279,3 +279,12 @@ model SubscriptionPlan {
   @@index([name])
 }
 
+model StripeSettings {
+  id                  String   @id @default("stripe-settings") // Singleton record
+  publishableKey       String?  @db.Text
+  secretKey            String?  @db.Text // Encrypted or stored securely
+  webhookSecret       String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
