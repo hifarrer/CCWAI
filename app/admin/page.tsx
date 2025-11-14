@@ -199,24 +199,33 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/plans')
       if (res.ok) {
         const data = await res.json()
-        // Convert Decimal to number for display
-        const serializedPlans = data.plans.map((plan: any) => ({
-          ...plan,
-          monthlyPrice: typeof plan.monthlyPrice === 'object' && plan.monthlyPrice !== null && 'toNumber' in plan.monthlyPrice
-            ? (plan.monthlyPrice as any).toNumber()
-            : typeof plan.monthlyPrice === 'number'
-            ? plan.monthlyPrice
-            : parseFloat(String(plan.monthlyPrice)),
-          yearlyPrice: typeof plan.yearlyPrice === 'object' && plan.yearlyPrice !== null && 'toNumber' in plan.yearlyPrice
-            ? (plan.yearlyPrice as any).toNumber()
-            : typeof plan.yearlyPrice === 'number'
-            ? plan.yearlyPrice
-            : parseFloat(String(plan.yearlyPrice)),
-        }))
-        setPlans(serializedPlans || [])
+        if (data.plans && Array.isArray(data.plans)) {
+          // Convert Decimal to number for display
+          const serializedPlans = data.plans.map((plan: any) => ({
+            ...plan,
+            monthlyPrice: typeof plan.monthlyPrice === 'object' && plan.monthlyPrice !== null && 'toNumber' in plan.monthlyPrice
+              ? (plan.monthlyPrice as any).toNumber()
+              : typeof plan.monthlyPrice === 'number'
+              ? plan.monthlyPrice
+              : parseFloat(String(plan.monthlyPrice)),
+            yearlyPrice: typeof plan.yearlyPrice === 'object' && plan.yearlyPrice !== null && 'toNumber' in plan.yearlyPrice
+              ? (plan.yearlyPrice as any).toNumber()
+              : typeof plan.yearlyPrice === 'number'
+              ? plan.yearlyPrice
+              : parseFloat(String(plan.yearlyPrice)),
+          }))
+          setPlans(serializedPlans)
+        } else {
+          console.error('Invalid plans data format:', data)
+          setPlans([])
+        }
+      } else {
+        console.error('Failed to fetch plans:', res.status, res.statusText)
+        setPlans([])
       }
     } catch (error) {
       console.error('Error fetching plans:', error)
+      setPlans([])
     }
   }
 
@@ -775,14 +784,14 @@ export default function AdminPage() {
                       <td className="p-2">{user.cancerType || 'N/A'}</td>
                       <td className="p-2">
                         <Select
-                          value={user.planId || ''}
-                          onValueChange={(value) => handlePlanChange(user.id, value)}
+                          value={user.planId || 'none'}
+                          onValueChange={(value) => handlePlanChange(user.id, value === 'none' ? '' : value)}
                         >
                           <SelectTrigger className="w-[140px]">
                             <SelectValue placeholder="No Plan" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">No Plan</SelectItem>
+                            <SelectItem value="none">No Plan</SelectItem>
                             {plans.map((plan) => (
                               <SelectItem key={plan.id} value={plan.id}>
                                 {plan.name}
@@ -858,14 +867,14 @@ export default function AdminPage() {
                     <div>
                       <Label>Subscription Plan</Label>
                       <Select
-                        value={editForm.planId}
-                        onValueChange={(value) => setEditForm({ ...editForm, planId: value })}
+                        value={editForm.planId || 'none'}
+                        onValueChange={(value) => setEditForm({ ...editForm, planId: value === 'none' ? '' : value })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select a plan" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No Plan</SelectItem>
+                          <SelectItem value="none">No Plan</SelectItem>
                           {plans.map((plan) => (
                             <SelectItem key={plan.id} value={plan.id}>
                               {plan.name}
