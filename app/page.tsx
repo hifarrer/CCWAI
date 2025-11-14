@@ -14,8 +14,7 @@ import {
   Database,
   TrendingUp,
   Heart,
-  ArrowRight,
-  Play
+  ArrowRight
 } from 'lucide-react'
 import {
   Accordion,
@@ -106,8 +105,15 @@ export default async function LandingPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-purple-50 via-white to-pink-50 py-20">
-        <div className="max-w-[1240px] mx-auto px-4">
+      <section 
+        className="relative py-20 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(https://res.cloudinary.com/dqemas8ht/image/upload/v1763164131/415a3ea0a2324f8087ca1488c23b0616_s976vt.png)',
+        }}
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-white/70"></div>
+        <div className="max-w-[1240px] mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               Stay Ahead of Cancer Research
@@ -184,33 +190,20 @@ export default async function LandingPage() {
           </div>
           
           <div className="max-w-4xl mx-auto">
-            <div className="relative aspect-video bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
-              {/* Video Placeholder */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="relative inline-block">
-                    <div className="w-24 h-24 bg-white/90 rounded-full flex items-center justify-center shadow-lg mb-4 hover:bg-white hover:scale-110 transition-transform cursor-pointer">
-                      <Play className="h-12 w-12 text-purple-600 ml-1" fill="currentColor" />
-                    </div>
-                  </div>
-                  <p className="text-gray-600 font-medium text-lg">
-                    Video Demonstration
-                  </p>
-                  <p className="text-gray-500 text-sm mt-2">
-                    Click to play
-                  </p>
-                </div>
-              </div>
-              
-              {/* Decorative elements */}
-              <div className="absolute top-4 left-4 w-20 h-20 bg-purple-200/30 rounded-full blur-2xl"></div>
-              <div className="absolute bottom-4 right-4 w-32 h-32 bg-pink-200/30 rounded-full blur-3xl"></div>
-              <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-blue-200/30 rounded-full blur-xl"></div>
+            <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
+              <video
+                className="w-full h-full object-cover"
+                controls
+                preload="metadata"
+                poster=""
+              >
+                <source
+                  src="https://res.cloudinary.com/dqemas8ht/video/upload/v1763163925/CCWAIdemo_egvqfe.mp4"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
             </div>
-            
-            <p className="text-center text-sm text-gray-500 mt-6">
-              Video placeholder - Replace with actual demonstration video
-            </p>
           </div>
         </div>
       </section>
