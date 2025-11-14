@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -113,10 +114,9 @@ export default function PlansPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="flex-1 py-12 px-4">
-        <div className="max-w-7xl mx-auto">
+      <main className="max-w-[1240px] mx-auto px-4 py-12">
           {/* Header Section */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
@@ -193,8 +193,8 @@ export default function PlansPage() {
                     }`}
                   >
                     {isPremium && (
-                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <span className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                        <span className="inline-block bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-lg">
                           Most Popular
                         </span>
                       </div>
@@ -202,6 +202,16 @@ export default function PlansPage() {
                     <CardHeader className="text-center pb-8">
                       <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
                       <div className="mt-4">
+                        {isPremium && (
+                          <div className="mb-2">
+                            <span className="text-lg text-gray-400 line-through mr-2">
+                              ${billingPeriod === 'monthly' ? '30.00' : '280.00'}
+                            </span>
+                            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
+                              {billingPeriod === 'monthly' ? '50% OFF' : '57% OFF'}
+                            </span>
+                          </div>
+                        )}
                         <div className="text-4xl font-bold">
                           {formatPrice(price)}
                         </div>
@@ -217,7 +227,8 @@ export default function PlansPage() {
                         )}
                         {billingPeriod === 'monthly' && yearlyPrice > 0 && (
                           <div className="text-xs text-muted-foreground mt-2">
-                            ${yearlyPrice.toFixed(2)}/year if paid annually
+                            <span className="line-through text-gray-400 mr-1">$280.00</span>
+                            <span className="font-semibold">${yearlyPrice.toFixed(2)}</span>/year if paid annually
                           </div>
                         )}
                       </div>
@@ -252,15 +263,22 @@ export default function PlansPage() {
           )}
 
           {/* Additional Info */}
-          <div className="mt-16 text-center">
+          <div className="mt-16 text-center space-y-4">
             <p className="text-sm text-muted-foreground">
               All plans include secure access to your personalized dashboard.
               <br />
               Payment processing will be available soon.
             </p>
+            <div className="pt-4 border-t">
+              <Link
+                href="/premiumfree"
+                className="text-sm text-primary hover:text-primary/80 underline transition-colors"
+              >
+                Apply for a free premium account
+              </Link>
+            </div>
           </div>
-        </div>
-      </div>
+      </main>
       <Footer />
     </div>
   )

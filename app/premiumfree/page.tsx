@@ -9,12 +9,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export default function ContactPage() {
+export default function PremiumFreePage() {
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
-    subject: '',
-    message: '',
+    country: '',
+    state: '',
+    zipcode: '',
+    age: '',
+    situation: '',
   })
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,7 +42,7 @@ export default function ContactPage() {
     setErrorMessage('')
 
     try {
-      const response = await fetch('/api/contact', {
+      const response = await fetch('/api/premiumfree', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,11 +56,11 @@ export default function ContactPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send message')
+        throw new Error(data.error || 'Failed to submit application')
       }
 
       setSubmitStatus('success')
-      setFormData({ name: '', email: '', subject: '', message: '' })
+      setFormData({ email: '', country: '', state: '', zipcode: '', age: '', situation: '' })
       setRecaptchaToken(null)
       recaptchaRef.current?.reset()
     } catch (error) {
@@ -83,26 +85,15 @@ export default function ContactPage() {
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle className="text-3xl">Contact Us</CardTitle>
+              <CardTitle className="text-3xl">Apply for Free Premium Account</CardTitle>
               <CardDescription>
-                Have a question or need assistance? We're here to help. Fill out the form below and we'll get back to you as soon as possible.
+                We are happy to help anyone struggling financially with a free premium account.
+                <br />
+                Please fill out the application below to apply for a premium account.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Your name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -117,27 +108,68 @@ export default function ContactPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
+                  <Label htmlFor="country">Country</Label>
                   <Input
-                    id="subject"
-                    name="subject"
+                    id="country"
+                    name="country"
                     type="text"
-                    placeholder="What is this regarding?"
-                    value={formData.subject}
+                    placeholder="Your country"
+                    value={formData.country}
                     onChange={handleChange}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    name="state"
+                    type="text"
+                    placeholder="Your state or province"
+                    value={formData.state}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="zipcode">Zipcode</Label>
+                  <Input
+                    id="zipcode"
+                    name="zipcode"
+                    type="text"
+                    placeholder="Your zipcode or postal code"
+                    value={formData.zipcode}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="age">Age</Label>
+                  <Input
+                    id="age"
+                    name="age"
+                    type="number"
+                    placeholder="Your age"
+                    value={formData.age}
+                    onChange={handleChange}
+                    min="1"
+                    max="120"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="situation">Situation</Label>
                   <textarea
-                    id="message"
-                    name="message"
+                    id="situation"
+                    name="situation"
                     rows={6}
                     className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Your message..."
-                    value={formData.message}
+                    placeholder="Please describe your current financial situation..."
+                    value={formData.situation}
                     onChange={handleChange}
                     required
                   />
@@ -154,7 +186,7 @@ export default function ContactPage() {
 
                 {submitStatus === 'success' && (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-md text-green-800">
-                    Thank you for contacting us! We'll get back to you soon.
+                    Thank you for your application! We will review your request and get back to you soon.
                   </div>
                 )}
 
@@ -165,11 +197,9 @@ export default function ContactPage() {
                 )}
 
                 <Button type="submit" className="w-full" disabled={isSubmitting || !recaptchaToken}>
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                  {isSubmitting ? 'Submitting...' : 'Submit Application'}
                 </Button>
               </form>
-
-              
             </CardContent>
           </Card>
         </div>

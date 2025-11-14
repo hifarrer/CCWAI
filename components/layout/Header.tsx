@@ -54,7 +54,7 @@ export function Header() {
   return (
     <>
       <header className="max-w-[1240px] mx-auto px-4 pt-5 pb-6 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2.5">
           <Link href={session?.user ? "/dashboard" : "/login"}>
             <Image
               src="https://res.cloudinary.com/dqemas8ht/image/upload/v1762823833/CCWAI_1_stoio5.png"
@@ -65,14 +65,20 @@ export function Header() {
               priority
             />
           </Link>
+        </div>
+        <div className="flex items-center gap-4">
           <Link
             href="/plans"
             className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
           >
             Plans
           </Link>
-        </div>
-        <div className="flex items-center gap-4">
+          <Link
+            href="/contact"
+            className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            Contact
+          </Link>
           {session?.user && (
             <>
               <Button
