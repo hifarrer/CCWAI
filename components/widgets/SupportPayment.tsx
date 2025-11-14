@@ -15,7 +15,7 @@ export function SupportPayment({ onSuccess }: SupportPaymentProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState('')
 
-  const suggestedAmounts = [5, 25, 50, 500]
+  const suggestedAmounts = [5, 25, 50, 500, 5000]
 
   const handleAmountSelect = (amount: number) => {
     setSelectedAmount(amount)
@@ -84,7 +84,7 @@ export function SupportPayment({ onSuccess }: SupportPaymentProps) {
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold mb-4">Pay What You Want</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
               {suggestedAmounts.map((amount) => (
                 <Button
                   key={amount}

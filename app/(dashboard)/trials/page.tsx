@@ -175,9 +175,9 @@ export default async function TrialsPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="flex-1">
+      <main>
         <TrialsClient
           initialTrials={initialTrials}
           initialTotal={initialTotal}

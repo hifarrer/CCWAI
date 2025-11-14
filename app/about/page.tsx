@@ -16,6 +16,13 @@ export default function AboutPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 text-muted-foreground">
+              <div className="w-full flex justify-center my-6">
+                <img 
+                  src="https://res.cloudinary.com/dqemas8ht/image/upload/v1763155065/7fdf098b661440289d543bc44aa4a4c1_lplftv.png" 
+                  alt="About Us" 
+                  className="max-w-full h-auto rounded-lg shadow-md"
+                />
+              </div>
               <div className="prose prose-lg max-w-none">
                 <p className="text-base leading-relaxed">
                   We are committed to helping cancer patients around the world stay on top of news, treatments, and the latest research being made around the world. We scan and analyze thousands of news articles, research papers, and clinical trials from all types of cancers so you are the first to know about the latest developments.
