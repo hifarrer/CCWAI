@@ -187,7 +187,17 @@ export async function sendAlertEmail(
   email: string,
   data: EmailAlertData,
   skipRecordCreation: boolean = false
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ 
+  success: boolean
+  error?: string
+  emailId?: string
+  debug?: {
+    from: string
+    to: string
+    subject: string
+    resendResponse?: any
+  }
+}> {
   try {
     if (!process.env.RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY is not configured')
@@ -195,18 +205,45 @@ export async function sendAlertEmail(
 
     const html = generateEmailHTML(data)
     const alertLabel = getAlertTypeLabel(data.alertType)
+    const subject = `New ${alertLabel} - Cure Cancer With AI`
+
+    console.log(`[Email Debug] Attempting to send email:`, {
+      from: FROM_EMAIL,
+      to: email,
+      subject,
+      alertType: data.alertType,
+      articlesCount: data.articles.length,
+    })
 
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: `New ${alertLabel} - Cure Cancer With AI`,
+      subject,
       html,
     })
 
+    console.log(`[Email Debug] Resend API response:`, {
+      success: !result.error,
+      error: result.error,
+      data: result.data,
+    })
+
     if (result.error) {
-      console.error('Resend API error:', result.error)
-      return { success: false, error: result.error.message }
+      console.error('[Email Debug] Resend API error:', result.error)
+      return { 
+        success: false, 
+        error: result.error.message,
+        debug: {
+          from: FROM_EMAIL,
+          to: email,
+          subject,
+          resendResponse: result.error,
+        }
+      }
     }
+
+    const emailId = result.data?.id || 'unknown'
+    console.log(`[Email Debug] Email sent successfully. Email ID: ${emailId}`)
 
     // Record that we sent this email (skip in test mode or if flag is set)
     if (!skipRecordCreation) {
@@ -247,12 +284,26 @@ export async function sendAlertEmail(
       }
     }
 
-    return { success: true }
+    return { 
+      success: true,
+      emailId,
+      debug: {
+        from: FROM_EMAIL,
+        to: email,
+        subject,
+        resendResponse: result.data,
+      }
+    }
   } catch (error) {
-    console.error('Error sending alert email:', error)
+    console.error('[Email Debug] Error sending alert email:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      debug: {
+        from: FROM_EMAIL,
+        to: email,
+        subject: `New ${getAlertTypeLabel(data.alertType)} - Cure Cancer With AI`,
+      }
     }
   }
 }

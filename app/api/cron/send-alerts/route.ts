@@ -88,6 +88,14 @@ async function processAlerts(isTestMode: boolean) {
     researchArticlesSent: 0,
     newsSent: 0,
     errors: [] as string[],
+    emailDetails: [] as Array<{
+      email: string
+      alertType: string
+      success: boolean
+      emailId?: string
+      error?: string
+      debug?: any
+    }>,
   }
 
   try {
@@ -150,6 +158,15 @@ async function processAlerts(isTestMode: boolean) {
           true // Skip record creation in test mode
         )
 
+        stats.emailDetails.push({
+          email: testEmail,
+          alertType,
+          success: result.success,
+          emailId: result.emailId,
+          error: result.error,
+          debug: result.debug,
+        })
+
         if (result.success) {
           stats.emailsSent++
           if (alertType === 'researchArticles') {
@@ -197,11 +214,20 @@ async function processAlerts(isTestMode: boolean) {
         )
 
         if (articles.length > 0) {
-          const result = await sendAlertEmail(user.id, user.email, {
+          const result = await sendAlertEmail(user.id, user.email!, {
             articles,
             alertType: 'researchArticles',
             userName: user.name,
             cancerType: user.cancerType || undefined,
+          })
+
+          stats.emailDetails.push({
+            email: user.email!,
+            alertType: 'researchArticles',
+            success: result.success,
+            emailId: result.emailId,
+            error: result.error,
+            debug: result.debug,
           })
 
           if (result.success) {
@@ -223,11 +249,20 @@ async function processAlerts(isTestMode: boolean) {
         )
 
         if (articles.length > 0) {
-          const result = await sendAlertEmail(user.id, user.email, {
+          const result = await sendAlertEmail(user.id, user.email!, {
             articles,
             alertType: 'news',
             userName: user.name,
             cancerType: user.cancerType || undefined,
+          })
+
+          stats.emailDetails.push({
+            email: user.email!,
+            alertType: 'news',
+            success: result.success,
+            emailId: result.emailId,
+            error: result.error,
+            debug: result.debug,
           })
 
           if (result.success) {
@@ -248,11 +283,20 @@ async function processAlerts(isTestMode: boolean) {
         )
 
         if (articles.length > 0) {
-          const result = await sendAlertEmail(user.id, user.email, {
+          const result = await sendAlertEmail(user.id, user.email!, {
             articles,
             alertType: 'potentialCures',
             userName: user.name,
             cancerType: user.cancerType || undefined,
+          })
+
+          stats.emailDetails.push({
+            email: user.email!,
+            alertType: 'potentialCures',
+            success: result.success,
+            emailId: result.emailId,
+            error: result.error,
+            debug: result.debug,
           })
 
           if (result.success) {
