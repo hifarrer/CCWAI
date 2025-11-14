@@ -101,6 +101,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Disable body parsing for webhook route
-export const runtime = 'nodejs'
-
