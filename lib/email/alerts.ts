@@ -185,7 +185,8 @@ export function generateEmailHTML(data: EmailAlertData): string {
 export async function sendAlertEmail(
   userId: string,
   email: string,
-  data: EmailAlertData
+  data: EmailAlertData,
+  skipRecordCreation: boolean = false
 ): Promise<{ success: boolean; error?: string }> {
   try {
     if (!process.env.RESEND_API_KEY) {
@@ -207,20 +208,40 @@ export async function sendAlertEmail(
       return { success: false, error: result.error.message }
     }
 
-    // Record that we sent this email
-    for (const article of data.articles) {
-      try {
-        await prisma.userEmailAlert.create({
-          data: {
-            userId,
-            alertType: data.alertType,
-            recordId: article.id,
-            recordType: article.url ? 'NewsArticle' : 'ResearchPaper',
-          },
-        })
-      } catch (error: any) {
-        // Ignore unique constraint errors (already sent)
-        if (error.code !== 'P2002') {
+    // Record that we sent this email (skip in test mode or if flag is set)
+    if (!skipRecordCreation) {
+      // Verify user exists before creating alert record
+      const userExists = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      })
+
+      if (!userExists) {
+        console.warn(`User ${userId} not found, skipping alert record creation`)
+        return { success: true }
+      }
+
+      for (const article of data.articles) {
+        try {
+          await prisma.userEmailAlert.create({
+            data: {
+              userId,
+              alertType: data.alertType,
+              recordId: article.id,
+              recordType: article.url ? 'NewsArticle' : 'ResearchPaper',
+            },
+          })
+        } catch (error: any) {
+          // Ignore unique constraint errors (already sent)
+          if (error.code === 'P2002') {
+            // Already exists, that's fine
+            continue
+          }
+          // Ignore foreign key constraint errors (user might have been deleted)
+          if (error.code === 'P2003') {
+            console.warn(`Foreign key constraint error for user ${userId}, skipping alert record`)
+            continue
+          }
           console.error('Error recording email alert:', error)
         }
       }

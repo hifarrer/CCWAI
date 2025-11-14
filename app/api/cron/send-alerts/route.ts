@@ -138,12 +138,17 @@ async function processAlerts(isTestMode: boolean) {
       const alertTypes: Array<'researchArticles' | 'news'> = ['researchArticles', 'news']
       
       for (const alertType of alertTypes) {
-        const result = await sendAlertEmail('test-user-id', testEmail, {
-          articles: alertType === 'researchArticles' ? [testArticles[0]] : [testArticles[1]],
-          alertType,
-          userName: 'Test User',
-          cancerType: 'breast',
-        })
+        const result = await sendAlertEmail(
+          'test-user-id',
+          testEmail,
+          {
+            articles: alertType === 'researchArticles' ? [testArticles[0]] : [testArticles[1]],
+            alertType,
+            userName: 'Test User',
+            cancerType: 'breast',
+          },
+          true // Skip record creation in test mode
+        )
 
         if (result.success) {
           stats.emailsSent++
