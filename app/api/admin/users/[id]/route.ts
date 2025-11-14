@@ -16,13 +16,14 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, email, cancerType, zipCode } = body
+    const { name, email, cancerType, zipCode, planId } = body
 
     const updateData: any = {}
     if (name !== undefined) updateData.name = name || null
     if (email !== undefined) updateData.email = email || null
     if (cancerType !== undefined) updateData.cancerType = cancerType || null
     if (zipCode !== undefined) updateData.zipCode = zipCode || null
+    if (planId !== undefined) updateData.planId = planId || null
 
     const user = await prisma.user.update({
       where: { id: params.id },

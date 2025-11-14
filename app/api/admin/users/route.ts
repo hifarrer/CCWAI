@@ -19,7 +19,14 @@ export async function GET(request: NextRequest) {
         email: true,
         cancerType: true,
         zipCode: true,
+        planId: true,
         createdAt: true,
+        plan: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         _count: {
           select: {
             dailyCheckins: true,

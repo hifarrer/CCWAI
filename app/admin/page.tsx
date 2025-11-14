@@ -44,11 +44,23 @@ interface User {
   email: string | null
   cancerType: string | null
   zipCode: string | null
+  planId: string | null
+  plan: {
+    id: string
+    name: string
+  } | null
   createdAt: string
   _count: {
     dailyCheckins: number
     aiChatSessions: number
   }
+}
+
+interface SubscriptionPlan {
+  id: string
+  name: string
+  monthlyPrice: number
+  yearlyPrice: number
 }
 
 interface RssFeed {
@@ -97,7 +109,8 @@ export default function AdminPage() {
   const [stats, setStats] = useState<UsageStats | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', email: '', cancerType: '', zipCode: '' })
+  const [editForm, setEditForm] = useState({ name: '', email: '', cancerType: '', zipCode: '', planId: '' })
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [rssFeeds, setRssFeeds] = useState<RssFeed[]>([])
   const [editingRssFeed, setEditingRssFeed] = useState<RssFeed | null>(null)
   const [rssFeedForm, setRssFeedForm] = useState({ url: '', name: '', description: '', isActive: true })
@@ -137,6 +150,7 @@ export default function AdminPage() {
       fetchRssFeeds()
       fetchNcbiQueries()
       fetchStripeSettings()
+      fetchPlans()
     }
   }, [session, status])
 
@@ -180,6 +194,32 @@ export default function AdminPage() {
     }
   }
 
+  const fetchPlans = async () => {
+    try {
+      const res = await fetch('/api/admin/plans')
+      if (res.ok) {
+        const data = await res.json()
+        // Convert Decimal to number for display
+        const serializedPlans = data.plans.map((plan: any) => ({
+          ...plan,
+          monthlyPrice: typeof plan.monthlyPrice === 'object' && plan.monthlyPrice !== null && 'toNumber' in plan.monthlyPrice
+            ? (plan.monthlyPrice as any).toNumber()
+            : typeof plan.monthlyPrice === 'number'
+            ? plan.monthlyPrice
+            : parseFloat(String(plan.monthlyPrice)),
+          yearlyPrice: typeof plan.yearlyPrice === 'object' && plan.yearlyPrice !== null && 'toNumber' in plan.yearlyPrice
+            ? (plan.yearlyPrice as any).toNumber()
+            : typeof plan.yearlyPrice === 'number'
+            ? plan.yearlyPrice
+            : parseFloat(String(plan.yearlyPrice)),
+        }))
+        setPlans(serializedPlans || [])
+      }
+    } catch (error) {
+      console.error('Error fetching plans:', error)
+    }
+  }
+
   const handleEdit = (user: User) => {
     setEditingUser(user)
     setEditForm({
@@ -187,6 +227,7 @@ export default function AdminPage() {
       email: user.email || '',
       cancerType: user.cancerType || '',
       zipCode: user.zipCode || '',
+      planId: user.planId || '',
     })
   }
 
@@ -196,17 +237,45 @@ export default function AdminPage() {
       const res = await fetch(`/api/admin/users/${editingUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          ...editForm,
+          planId: editForm.planId || null,
+        }),
       })
       if (res.ok) {
         setEditingUser(null)
         fetchUsers()
+        alert('User updated successfully')
       } else {
-        alert('Failed to update user')
+        const error = await res.json()
+        alert(error.error || 'Failed to update user')
       }
     } catch (error) {
       console.error('Error updating user:', error)
       alert('Error updating user')
+    }
+  }
+
+  const handlePlanChange = async (userId: string, newPlanId: string) => {
+    if (!confirm('Are you sure you want to change this user\'s plan?')) return
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: newPlanId || null,
+        }),
+      })
+      if (res.ok) {
+        fetchUsers()
+        alert('Plan updated successfully')
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Failed to update plan')
+      }
+    } catch (error) {
+      console.error('Error updating plan:', error)
+      alert('Error updating plan')
     }
   }
 
@@ -691,6 +760,7 @@ export default function AdminPage() {
                     <th className="text-left p-2">Name</th>
                     <th className="text-left p-2">Email</th>
                     <th className="text-left p-2">Cancer Type</th>
+                    <th className="text-left p-2">Plan</th>
                     <th className="text-left p-2">Check-ins</th>
                     <th className="text-left p-2">Chat Sessions</th>
                     <th className="text-left p-2">Created</th>
@@ -703,6 +773,24 @@ export default function AdminPage() {
                       <td className="p-2">{user.name || 'N/A'}</td>
                       <td className="p-2">{user.email || 'N/A'}</td>
                       <td className="p-2">{user.cancerType || 'N/A'}</td>
+                      <td className="p-2">
+                        <Select
+                          value={user.planId || ''}
+                          onValueChange={(value) => handlePlanChange(user.id, value)}
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="No Plan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">No Plan</SelectItem>
+                            {plans.map((plan) => (
+                              <SelectItem key={plan.id} value={plan.id}>
+                                {plan.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
                       <td className="p-2">{user._count.dailyCheckins}</td>
                       <td className="p-2">{user._count.aiChatSessions}</td>
                       <td className="p-2">{new Date(user.createdAt).toLocaleDateString()}</td>
@@ -766,6 +854,25 @@ export default function AdminPage() {
                         value={editForm.zipCode}
                         onChange={(e) => setEditForm({ ...editForm, zipCode: e.target.value })}
                       />
+                    </div>
+                    <div>
+                      <Label>Subscription Plan</Label>
+                      <Select
+                        value={editForm.planId}
+                        onValueChange={(value) => setEditForm({ ...editForm, planId: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a plan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No Plan</SelectItem>
+                          {plans.map((plan) => (
+                            <SelectItem key={plan.id} value={plan.id}>
+                              {plan.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={handleSaveEdit}>Save</Button>
