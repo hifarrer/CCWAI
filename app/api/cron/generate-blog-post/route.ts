@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateBlogPost } from '@/lib/ai/blog-generation'
+import { generateSitemap } from '@/lib/seo/sitemap-generator'
 
 /**
  * Public API endpoint for cron job to generate blog posts
@@ -55,26 +56,45 @@ async function handleRequest(request: NextRequest) {
     // Generate the blog post
     const startTime = Date.now()
     const result = await generateBlogPost()
-    const duration = Date.now() - startTime
+    const blogPostDuration = Date.now() - startTime
 
     if (!result.success) {
       return NextResponse.json(
         {
           success: false,
           error: result.error || 'Failed to generate blog post',
-          duration: `${duration}ms`,
+          duration: `${blogPostDuration}ms`,
           timestamp: new Date().toISOString(),
         },
         { status: 500 }
       )
     }
 
+    // Regenerate sitemap with the new blog post
+    const sitemapStartTime = Date.now()
+    const sitemapResult = await generateSitemap()
+    const sitemapDuration = Date.now() - sitemapStartTime
+
+    if (!sitemapResult.success) {
+      console.error('Failed to generate sitemap:', sitemapResult.error)
+      // Don't fail the entire request if sitemap generation fails
+      // Blog post was created successfully
+    }
+
+    const totalDuration = Date.now() - startTime
+
     return NextResponse.json({
       success: true,
       postId: result.postId,
-      duration: `${duration}ms`,
+      sitemap: {
+        success: sitemapResult.success,
+        urlCount: sitemapResult.urlCount,
+        duration: `${sitemapDuration}ms`,
+      },
+      duration: `${totalDuration}ms`,
+      blogPostDuration: `${blogPostDuration}ms`,
       timestamp: new Date().toISOString(),
-      message: 'Successfully generated blog post',
+      message: 'Successfully generated blog post and regenerated sitemap',
     })
   } catch (error) {
     console.error('Error in cron blog post generation:', error)
