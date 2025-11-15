@@ -9,16 +9,24 @@ import { generateSitemapXml } from '@/lib/seo/sitemap-generator'
  * 
  * Accessible at: https://curecancerwithai.com/sitemap.xml
  */
+
+// Force dynamic rendering - never cache or statically generate this route
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   try {
     const xml = await generateSitemapXml()
 
     // Return XML response with proper headers
+    // Minimal caching to ensure fresh content after blog posts are generated
+    // The route is forced dynamic, but we still allow short CDN caching for performance
     return new NextResponse(xml, {
       status: 200,
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', // 1 min cache, 5 min stale
+        'X-Sitemap-Generated': new Date().toISOString(), // Debug header
       },
     })
   } catch (error) {
