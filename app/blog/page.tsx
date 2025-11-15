@@ -1,14 +1,14 @@
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { db } from '@/lib/db/client'
+import { prisma } from '@/lib/db/client'
 import Link from 'next/link'
 
 export const revalidate = 3600 // Revalidate every hour
 
 async function getBlogPosts() {
   try {
-    const posts = await db.blogPost.findMany({
+    const posts = await prisma.blogPost.findMany({
       orderBy: {
         publishedAt: 'desc',
       },

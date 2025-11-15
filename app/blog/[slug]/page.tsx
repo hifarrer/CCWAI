@@ -1,7 +1,7 @@
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { db } from '@/lib/db/client'
+import { prisma } from '@/lib/db/client'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 
@@ -9,7 +9,7 @@ export const revalidate = 3600 // Revalidate every hour
 
 async function getBlogPost(slug: string) {
   try {
-    const post = await db.blogPost.findUnique({
+    const post = await prisma.blogPost.findUnique({
       where: { slug },
     })
     return post

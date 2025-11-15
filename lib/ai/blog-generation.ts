@@ -1,5 +1,5 @@
 import { openai } from './openai'
-import { db } from '@/lib/db/client'
+import { prisma } from '@/lib/db/client'
 
 /**
  * Generate a blog post about using AI to search for the cure of cancer
@@ -127,7 +127,7 @@ export async function generateBlogPost(): Promise<{
       .substring(0, 100)
     
     // Ensure slug is unique by appending timestamp if needed
-    const existingPost = await db.blogPost.findUnique({
+    const existingPost = await prisma.blogPost.findUnique({
       where: { slug },
     })
 
@@ -136,7 +136,7 @@ export async function generateBlogPost(): Promise<{
       : slug
 
     // Save to database
-    const blogPost = await db.blogPost.create({
+    const blogPost = await prisma.blogPost.create({
       data: {
         title,
         content,
