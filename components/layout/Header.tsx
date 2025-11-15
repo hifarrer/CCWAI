@@ -74,6 +74,12 @@ export function Header() {
             About
           </Link>
           <Link
+            href="/blog"
+            className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            Blog
+          </Link>
+          <Link
             href="/plans"
             className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
           >
